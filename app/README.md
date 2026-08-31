@@ -1,5 +1,22 @@
 Welcome to your new TanStack Start app!
 
+@ Local setup
+
+`docker compose up` mints the mock IdP's keypair itself. Run the same script on
+the host once to copy the certificate into `.env` as `SSO_IDP_CERT`; it is
+idempotent and reuses the keypair compose already made.
+
+```bash
+cp .env.example .env   # then fill in BETTER_AUTH_SECRET
+docker compose -f ../compose.yaml up -d
+sh ../infra/mock-idp/gen-keys.sh
+pnpm db:migrate
+pnpm dev
+```
+
+Sign in at `http://localhost:3000` with `Continue with Okta`. The mock IdP is at
+`http://localhost:4000` and vouches for any `@example.com` address.
+
 @ Getting Started
 
 To run this application:

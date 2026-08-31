@@ -19,6 +19,7 @@
     "build": "vite build"
   },
   "dependencies": {
+    "@better-auth/sso": "1.7.2",
     "@t3-oss/env-core": "^0.13.10",
     "@tailwindcss/vite": "^4.1.18",
     "@tanstack/match-sorter-utils": "latest",
