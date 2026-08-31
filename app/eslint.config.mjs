@@ -4,7 +4,11 @@ import perfectionist from "eslint-plugin-perfectionist";
 
 export default antfu({
   formatters: true,
-  ignores: ["src/routeTree.gen.ts", "src/db/schema/auth-schema.ts"],
+  ignores: [
+    "src/routeTree.gen.ts",
+    "src/db/schema/auth-schema.ts",
+    "src/db/migrations/**",
+  ],
   react: true,
   stylistic: {
     indent: 2,
