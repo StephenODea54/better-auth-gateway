@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "prepare": "cd .. && husky ./app/.husky",
-    "with-env": "dotenv -e .env -e ../../.env --",
+    "with-env": "dotenv -e .env --",
     "auth:generate": "pnpm with-env auth generate --config ./src/features/auth/clients/server-client.ts --output ./src/db/schema/auth-schema.ts --yes",
     "db:generate": "pnpm with-env drizzle-kit generate --config ./src/db/config/db-config.ts",
     "db:migrate": "pnpm with-env drizzle-kit migrate --config ./src/db/config/db-config.ts",

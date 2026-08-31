@@ -14,6 +14,10 @@ export const env = createEnv({
   server: {
     BETTER_AUTH_SECRET: z.string().min(1),
     BETTER_AUTH_URL: z.url(),
-    DATABASE_URL: z.url(),
+    POSTGRES_DB: z.string().min(1),
+    POSTGRES_HOST: z.string().min(1),
+    POSTGRES_PASSWORD: z.string().min(1),
+    POSTGRES_PORT: z.coerce.number().int().positive(),
+    POSTGRES_USER: z.string().min(1),
   },
 });
