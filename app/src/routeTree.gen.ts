@@ -10,7 +10,14 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as DashboardRouteImport } from './routes/dashboard'
+import { Route as DashboardRouteRouteImport } from './routes/dashboard/route'
+import { Route as DashboardIndexRouteImport } from './routes/dashboard/index'
+import { Route as DashboardApplicationsRouteImport } from './routes/dashboard/applications'
+import { Route as DashboardInvitationsRouteImport } from './routes/dashboard/invitations'
+import { Route as DashboardMembersRouteImport } from './routes/dashboard/members'
+import { Route as DashboardPermissionsRouteImport } from './routes/dashboard/permissions'
+import { Route as DashboardRolesRouteImport } from './routes/dashboard/roles'
+import { Route as DashboardSsoProvidersRouteImport } from './routes/dashboard/sso-providers'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
 
 const IndexRoute = IndexRouteImport.update({
@@ -18,10 +25,45 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const DashboardRoute = DashboardRouteImport.update({
+const DashboardRouteRoute = DashboardRouteRouteImport.update({
   id: '/dashboard',
   path: '/dashboard',
   getParentRoute: () => rootRouteImport,
+} as any)
+const DashboardIndexRoute = DashboardIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => DashboardRouteRoute,
+} as any)
+const DashboardApplicationsRoute = DashboardApplicationsRouteImport.update({
+  id: '/applications',
+  path: '/applications',
+  getParentRoute: () => DashboardRouteRoute,
+} as any)
+const DashboardInvitationsRoute = DashboardInvitationsRouteImport.update({
+  id: '/invitations',
+  path: '/invitations',
+  getParentRoute: () => DashboardRouteRoute,
+} as any)
+const DashboardMembersRoute = DashboardMembersRouteImport.update({
+  id: '/members',
+  path: '/members',
+  getParentRoute: () => DashboardRouteRoute,
+} as any)
+const DashboardPermissionsRoute = DashboardPermissionsRouteImport.update({
+  id: '/permissions',
+  path: '/permissions',
+  getParentRoute: () => DashboardRouteRoute,
+} as any)
+const DashboardRolesRoute = DashboardRolesRouteImport.update({
+  id: '/roles',
+  path: '/roles',
+  getParentRoute: () => DashboardRouteRoute,
+} as any)
+const DashboardSsoProvidersRoute = DashboardSsoProvidersRouteImport.update({
+  id: '/sso-providers',
+  path: '/sso-providers',
+  getParentRoute: () => DashboardRouteRoute,
 } as any)
 const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
   id: '/api/auth/$',
@@ -31,31 +73,81 @@ const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '/dashboard': typeof DashboardRoute
+  '/dashboard': typeof DashboardRouteRouteWithChildren
+  '/dashboard/applications': typeof DashboardApplicationsRoute
+  '/dashboard/invitations': typeof DashboardInvitationsRoute
+  '/dashboard/members': typeof DashboardMembersRoute
+  '/dashboard/permissions': typeof DashboardPermissionsRoute
+  '/dashboard/roles': typeof DashboardRolesRoute
+  '/dashboard/sso-providers': typeof DashboardSsoProvidersRoute
+  '/dashboard/': typeof DashboardIndexRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/dashboard': typeof DashboardRoute
+  '/dashboard/applications': typeof DashboardApplicationsRoute
+  '/dashboard/invitations': typeof DashboardInvitationsRoute
+  '/dashboard/members': typeof DashboardMembersRoute
+  '/dashboard/permissions': typeof DashboardPermissionsRoute
+  '/dashboard/roles': typeof DashboardRolesRoute
+  '/dashboard/sso-providers': typeof DashboardSsoProvidersRoute
+  '/dashboard': typeof DashboardIndexRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
-  '/dashboard': typeof DashboardRoute
+  '/dashboard': typeof DashboardRouteRouteWithChildren
+  '/dashboard/applications': typeof DashboardApplicationsRoute
+  '/dashboard/invitations': typeof DashboardInvitationsRoute
+  '/dashboard/members': typeof DashboardMembersRoute
+  '/dashboard/permissions': typeof DashboardPermissionsRoute
+  '/dashboard/roles': typeof DashboardRolesRoute
+  '/dashboard/sso-providers': typeof DashboardSsoProvidersRoute
+  '/dashboard/': typeof DashboardIndexRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/dashboard' | '/api/auth/$'
+  fullPaths:
+    | '/'
+    | '/dashboard'
+    | '/dashboard/applications'
+    | '/dashboard/invitations'
+    | '/dashboard/members'
+    | '/dashboard/permissions'
+    | '/dashboard/roles'
+    | '/dashboard/sso-providers'
+    | '/dashboard/'
+    | '/api/auth/$'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/dashboard' | '/api/auth/$'
-  id: '__root__' | '/' | '/dashboard' | '/api/auth/$'
+  to:
+    | '/'
+    | '/dashboard/applications'
+    | '/dashboard/invitations'
+    | '/dashboard/members'
+    | '/dashboard/permissions'
+    | '/dashboard/roles'
+    | '/dashboard/sso-providers'
+    | '/dashboard'
+    | '/api/auth/$'
+  id:
+    | '__root__'
+    | '/'
+    | '/dashboard'
+    | '/dashboard/applications'
+    | '/dashboard/invitations'
+    | '/dashboard/members'
+    | '/dashboard/permissions'
+    | '/dashboard/roles'
+    | '/dashboard/sso-providers'
+    | '/dashboard/'
+    | '/api/auth/$'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
-  DashboardRoute: typeof DashboardRoute
+  DashboardRouteRoute: typeof DashboardRouteRouteWithChildren
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
 }
 
@@ -72,8 +164,57 @@ declare module '@tanstack/react-router' {
       id: '/dashboard'
       path: '/dashboard'
       fullPath: '/dashboard'
-      preLoaderRoute: typeof DashboardRouteImport
+      preLoaderRoute: typeof DashboardRouteRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/dashboard/': {
+      id: '/dashboard/'
+      path: '/'
+      fullPath: '/dashboard/'
+      preLoaderRoute: typeof DashboardIndexRouteImport
+      parentRoute: typeof DashboardRouteRoute
+    }
+    '/dashboard/applications': {
+      id: '/dashboard/applications'
+      path: '/applications'
+      fullPath: '/dashboard/applications'
+      preLoaderRoute: typeof DashboardApplicationsRouteImport
+      parentRoute: typeof DashboardRouteRoute
+    }
+    '/dashboard/invitations': {
+      id: '/dashboard/invitations'
+      path: '/invitations'
+      fullPath: '/dashboard/invitations'
+      preLoaderRoute: typeof DashboardInvitationsRouteImport
+      parentRoute: typeof DashboardRouteRoute
+    }
+    '/dashboard/members': {
+      id: '/dashboard/members'
+      path: '/members'
+      fullPath: '/dashboard/members'
+      preLoaderRoute: typeof DashboardMembersRouteImport
+      parentRoute: typeof DashboardRouteRoute
+    }
+    '/dashboard/permissions': {
+      id: '/dashboard/permissions'
+      path: '/permissions'
+      fullPath: '/dashboard/permissions'
+      preLoaderRoute: typeof DashboardPermissionsRouteImport
+      parentRoute: typeof DashboardRouteRoute
+    }
+    '/dashboard/roles': {
+      id: '/dashboard/roles'
+      path: '/roles'
+      fullPath: '/dashboard/roles'
+      preLoaderRoute: typeof DashboardRolesRouteImport
+      parentRoute: typeof DashboardRouteRoute
+    }
+    '/dashboard/sso-providers': {
+      id: '/dashboard/sso-providers'
+      path: '/sso-providers'
+      fullPath: '/dashboard/sso-providers'
+      preLoaderRoute: typeof DashboardSsoProvidersRouteImport
+      parentRoute: typeof DashboardRouteRoute
     }
     '/api/auth/$': {
       id: '/api/auth/$'
@@ -85,9 +226,33 @@ declare module '@tanstack/react-router' {
   }
 }
 
+interface DashboardRouteRouteChildren {
+  DashboardApplicationsRoute: typeof DashboardApplicationsRoute
+  DashboardInvitationsRoute: typeof DashboardInvitationsRoute
+  DashboardMembersRoute: typeof DashboardMembersRoute
+  DashboardPermissionsRoute: typeof DashboardPermissionsRoute
+  DashboardRolesRoute: typeof DashboardRolesRoute
+  DashboardSsoProvidersRoute: typeof DashboardSsoProvidersRoute
+  DashboardIndexRoute: typeof DashboardIndexRoute
+}
+
+const DashboardRouteRouteChildren: DashboardRouteRouteChildren = {
+  DashboardApplicationsRoute: DashboardApplicationsRoute,
+  DashboardInvitationsRoute: DashboardInvitationsRoute,
+  DashboardMembersRoute: DashboardMembersRoute,
+  DashboardPermissionsRoute: DashboardPermissionsRoute,
+  DashboardRolesRoute: DashboardRolesRoute,
+  DashboardSsoProvidersRoute: DashboardSsoProvidersRoute,
+  DashboardIndexRoute: DashboardIndexRoute,
+}
+
+const DashboardRouteRouteWithChildren = DashboardRouteRoute._addFileChildren(
+  DashboardRouteRouteChildren,
+)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
-  DashboardRoute: DashboardRoute,
+  DashboardRouteRoute: DashboardRouteRouteWithChildren,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
 }
 export const routeTree = rootRouteImport
