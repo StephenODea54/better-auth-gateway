@@ -1,0 +1,31 @@
+# Ignore everything
+*
+# But descend into directories
+!*/
+# but still exclude generated folders
+*.nitro
+*.output
+*dist
+*dist-ssr
+*node_modules
+# And permit certain files
+!.dockerignore
+!.env.example
+!.gitignore
+!compose.yaml
+!Dockerfile
+!pre-commit
+# And filetypes
+!*.crt
+!*.css
+!*.html
+!*.js
+!*.json
+!*.md
+!*.mjs
+!*.sh
+!*.sql
+!*.ts
+!*.tsx
+!*.yaml
+!*.yml
