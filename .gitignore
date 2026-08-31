@@ -1,13 +1,16 @@
 # Ignore everything
 *
+
 # But descend into directories
 !*/
+
 # but still exclude generated folders
 *.nitro
 *.output
 *dist
 *dist-ssr
 *node_modules
+
 # And permit certain files
 !.dockerignore
 !.env.example
@@ -15,7 +18,9 @@
 !compose.yaml
 !Dockerfile
 !pre-commit
+
 # And filetypes
+!.gitkeep
 !*.crt
 !*.css
 !*.html
@@ -29,3 +34,6 @@
 !*.tsx
 !*.yaml
 !*.yml
+
+# And include the mock idp stuff
+infra/mock-idp/keys/*.pem
