@@ -1,10 +1,12 @@
 import { sso } from "@better-auth/sso";
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
+import { organization } from "better-auth/plugins";
 import { tanstackStartCookies } from "better-auth/tanstack-start";
 
 import { env } from "@/config/env.ts";
 import { db } from "@/db/clients/db-client.ts";
+import { ac, roles } from "@/features/auth/lib/access-control.ts";
 
 const SSO_PROVIDER_ID = "okta";
 
@@ -17,6 +19,12 @@ export const auth = betterAuth({
     enabled: false,
   },
   plugins: [
+    organization({
+      ac,
+      creatorRole: "owner",
+      dynamicAccessControl: { enabled: true },
+      roles,
+    }),
     sso({
       defaultSSO: [{
         domain: env.SSO_EMAIL_DOMAIN,

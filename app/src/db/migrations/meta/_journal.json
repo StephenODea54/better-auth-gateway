@@ -15,6 +15,13 @@
       "when": 1788206401819,
       "tag": "0001_woozy_the_enforcers",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1788210917876,
+      "tag": "0002_smart_vermin",
+      "breakpoints": true
     }
   ]
 }
