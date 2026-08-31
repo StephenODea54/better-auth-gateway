@@ -5,6 +5,7 @@ import {
 } from "@tanstack/react-router";
 
 import { RootLayout } from "@/components/layouts/root-layout";
+import { getSession } from "@/features/auth/api/get-session.ts";
 
 import appCss from "../styles/index.css?url";
 
@@ -13,6 +14,7 @@ interface MyRouterContext {
 }
 
 export const Route = createRootRouteWithContext<MyRouterContext>()({
+  beforeLoad: async () => ({ session: await getSession() }),
   errorComponent: () => <div>Oops! Something went wrong</div>,
   head: () => ({
     links: [

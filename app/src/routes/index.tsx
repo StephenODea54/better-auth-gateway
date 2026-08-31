@@ -1,18 +1,20 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, redirect } from "@tanstack/react-router";
 
-export const Route = createFileRoute("/")({ component: Home });
+import { LoginForm } from "@/features/auth/components/login-form.tsx";
+
+export const Route = createFileRoute("/")({
+  component: Home,
+  loader: ({ context }) => {
+    if (context.session) {
+      throw redirect({ to: "/dashboard" });
+    }
+  },
+});
 
 export function Home() {
   return (
-    <div className="p-8">
-      <h1 className="text-4xl font-bold">Welcome to TanStack Start</h1>
-      <p className="mt-4 text-lg">
-        Edit
-        {" "}
-        <code>src/routes/index.tsx</code>
-        {" "}
-        to get started.
-      </p>
-    </div>
+    <main className="flex min-h-svh flex-col items-center justify-center bg-muted p-6">
+      <LoginForm />
+    </main>
   );
 }
