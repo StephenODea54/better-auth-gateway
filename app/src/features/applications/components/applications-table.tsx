@@ -1,14 +1,24 @@
 import type { TableFeatures } from "@tanstack/react-table";
 
 import {
+  columnFilteringFeature,
   createColumnHelper,
   createCoreRowModel,
+  createFilteredRowModel,
   createPaginatedRowModel,
+  createSortedRowModel,
+  filterFn_includesString,
   flexRender,
   rowPaginationFeature,
+  rowSortingFeature,
+  sortFn_text,
   useTable,
 } from "@tanstack/react-table";
-import { AppWindowIcon, TriangleAlertIcon } from "lucide-react";
+import {
+  AppWindowIcon,
+  SearchIcon,
+  TriangleAlertIcon,
+} from "lucide-react";
 
 import type { Application } from "@/features/applications/api/list-applications.ts";
 
@@ -20,6 +30,7 @@ import {
   EmptyMedia,
   EmptyTitle,
 } from "@/components/ui/empty.tsx";
+import { Input } from "@/components/ui/input.tsx";
 import {
   Pagination,
   PaginationContent,
@@ -29,6 +40,7 @@ import {
   PaginationPrevious,
 } from "@/components/ui/pagination.tsx";
 import { Skeleton } from "@/components/ui/skeleton.tsx";
+import { ariaSort, SortableHeader } from "@/components/ui/sortable-header.tsx";
 import {
   Table,
   TableBody,
@@ -62,10 +74,12 @@ const columns = columnHelper.columns([
   }),
   columnHelper.accessor("acsUrl", {
     cell: info => <CopyButton label="single sign-on URL" value={info.getValue()} />,
+    enableSorting: false,
     header: "Single sign-on URL (ACS)",
   }),
   columnHelper.accessor("audienceUri", {
     cell: info => <CopyButton label="audience URI" value={info.getValue()} />,
+    enableSorting: false,
     header: "Audience URI",
   }),
   columnHelper.display({
@@ -81,12 +95,22 @@ export function ApplicationsTable() {
   const table = useTable({
     columns,
     data: applications ?? [],
+    enableSortingRemoval: false,
     features: {
+      columnFilteringFeature,
       coreRowModel: createCoreRowModel(),
+      filteredRowModel: createFilteredRowModel(),
+      filterFns: { includesString: filterFn_includesString },
       paginatedRowModel: createPaginatedRowModel(),
       rowPaginationFeature,
+      rowSortingFeature,
+      sortedRowModel: createSortedRowModel(),
+      sortFns: { text: sortFn_text },
     },
-    initialState: { pagination: { pageIndex: 0, pageSize: 10 } },
+    initialState: {
+      pagination: { pageIndex: 0, pageSize: 10 },
+      sorting: [{ desc: false, id: "name" }],
+    },
   });
 
   if (isPending) {
@@ -127,35 +151,73 @@ export function ApplicationsTable() {
     );
   }
 
+  const nameColumn = table.getColumn("name");
+  const search = (nameColumn?.getFilterValue() as string | undefined) ?? "";
+  const rows = table.getRowModel().rows;
+  const matchCount = table.getPrePaginatedRowModel().rows.length;
   const { pageIndex, pageSize } = table.state.pagination;
   const firstRow = pageIndex * pageSize + 1;
-  const lastRow = Math.min(firstRow + pageSize - 1, applications.length);
+  const lastRow = Math.min(firstRow + pageSize - 1, matchCount);
 
   return (
     <div className="flex flex-col gap-4">
+      <div className="relative max-w-sm">
+        <SearchIcon className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
+        <Input
+          aria-label="Search applications by name"
+          className="pl-9"
+          onChange={event => nameColumn?.setFilterValue(event.target.value)}
+          placeholder="Search by name"
+          type="search"
+          value={search}
+        />
+      </div>
+
       <div className="rounded-xl border">
         <Table>
           <TableHeader>
             {table.getHeaderGroups().map(headerGroup => (
               <TableRow key={headerGroup.id}>
                 {headerGroup.headers.map(header => (
-                  <TableHead key={header.id}>
-                    {flexRender(header.column.columnDef.header, header.getContext())}
+                  <TableHead
+                    aria-sort={header.column.getCanSort() ? ariaSort(header.column.getIsSorted()) : undefined}
+                    key={header.id}
+                  >
+                    {header.column.getCanSort()
+                      ? (
+                          <SortableHeader
+                            onToggle={header.column.getToggleSortingHandler()}
+                            sorted={header.column.getIsSorted()}
+                          >
+                            {flexRender(header.column.columnDef.header, header.getContext())}
+                          </SortableHeader>
+                        )
+                      : flexRender(header.column.columnDef.header, header.getContext())}
                   </TableHead>
                 ))}
               </TableRow>
             ))}
           </TableHeader>
           <TableBody>
-            {table.getRowModel().rows.map(row => (
-              <TableRow key={row.id}>
-                {row.getAllCells().map(cell => (
-                  <TableCell key={cell.id}>
-                    {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                  </TableCell>
+            {rows.length === 0
+              ? (
+                  <TableRow>
+                    <TableCell className="h-24 text-center text-sm text-muted-foreground" colSpan={columns.length}>
+                      No applications match
+                      {" "}
+                      <span className="font-medium text-foreground">{search}</span>
+                    </TableCell>
+                  </TableRow>
+                )
+              : rows.map(row => (
+                  <TableRow key={row.id}>
+                    {row.getAllCells().map(cell => (
+                      <TableCell key={cell.id}>
+                        {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                      </TableCell>
+                    ))}
+                  </TableRow>
                 ))}
-              </TableRow>
-            ))}
           </TableBody>
         </Table>
       </div>
@@ -167,7 +229,7 @@ export function ApplicationsTable() {
             –
             {lastRow}
             {" of "}
-            {applications.length}
+            {matchCount}
           </p>
 
           <Pagination className="mx-0 w-auto justify-end">
