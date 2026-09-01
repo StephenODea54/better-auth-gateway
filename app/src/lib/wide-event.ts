@@ -1,4 +1,5 @@
 import { createMiddleware } from "@tanstack/react-start";
+import { lt } from "drizzle-orm";
 import { AsyncLocalStorage } from "node:async_hooks";
 import process from "node:process";
 
@@ -8,11 +9,14 @@ type EventFields = Record<string, unknown>;
 
 const BATCH_SIZE = 50;
 const FLUSH_MS = 500;
+const RETENTION_DAYS = 90;
 const SAMPLE_RATE = 0.05;
 const SLOW_MS = 1000;
+const SWEEP_MS = 60 * 60 * 1000;
 
 const queue: (typeof wideEvent.$inferInsert)[] = [];
 let flushTimer: ReturnType<typeof setTimeout> | undefined;
+let sweptAt = 0;
 let storage: AsyncLocalStorage<EventFields> | undefined;
 
 export function countEvent(key: string) {
@@ -92,6 +96,16 @@ async function flush() {
 
   try {
     await db.insert(wideEvent).values(rows);
+
+    if (Date.now() - sweptAt < SWEEP_MS) {
+      return;
+    }
+
+    sweptAt = Date.now();
+
+    await db
+      .delete(wideEvent)
+      .where(lt(wideEvent.occurredAt, new Date(Date.now() - RETENTION_DAYS * 24 * 60 * 60 * 1000)));
   }
   catch (error) {
     process.stderr.write(`wide-event flush failed: ${String(error)}\n`);
