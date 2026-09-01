@@ -1,4 +1,4 @@
-import { LockIcon, PlusIcon, TriangleAlertIcon } from "lucide-react";
+import { LockIcon, PlusIcon, RefreshCwIcon, TriangleAlertIcon } from "lucide-react";
 import { useMemo, useState } from "react";
 
 import type { VocabularyGroup } from "@/features/access/lib/permissions.ts";
@@ -6,6 +6,7 @@ import type { VocabularyGroup } from "@/features/access/lib/permissions.ts";
 import { Button } from "@/components/ui/button.tsx";
 import {
   Empty,
+  EmptyContent,
   EmptyDescription,
   EmptyHeader,
   EmptyMedia,
@@ -82,6 +83,18 @@ export function RolesPanel({ organizationId }: RolesPanelProps) {
             {(rolesQuery.error ?? resourcesQuery.error)?.message}
           </EmptyDescription>
         </EmptyHeader>
+        <EmptyContent>
+          <Button
+            onClick={() => {
+              void rolesQuery.refetch();
+              void resourcesQuery.refetch();
+            }}
+            variant="outline"
+          >
+            <RefreshCwIcon />
+            Try again
+          </Button>
+        </EmptyContent>
       </Empty>
     );
   }

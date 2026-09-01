@@ -1,4 +1,4 @@
-import { Loader2Icon, TriangleAlertIcon } from "lucide-react";
+import { Loader2Icon, RefreshCwIcon, TriangleAlertIcon } from "lucide-react";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 
@@ -7,6 +7,7 @@ import type { Member } from "@/features/members/api/list-members.ts";
 import { Button } from "@/components/ui/button.tsx";
 import {
   Empty,
+  EmptyContent,
   EmptyDescription,
   EmptyHeader,
   EmptyMedia,
@@ -96,6 +97,12 @@ export function MemberRolesSheet({ member, onOpenChange, open, organizationId }:
                 <EmptyTitle>Could not load roles</EmptyTitle>
                 <EmptyDescription>{rolesQuery.error.message}</EmptyDescription>
               </EmptyHeader>
+              <EmptyContent>
+                <Button onClick={() => void rolesQuery.refetch()} variant="outline">
+                  <RefreshCwIcon />
+                  Try again
+                </Button>
+              </EmptyContent>
             </Empty>
           )}
 

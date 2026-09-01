@@ -16,31 +16,27 @@ import {
 } from "@tanstack/react-table";
 import {
   AppWindowIcon,
+  RefreshCwIcon,
   SearchIcon,
   TriangleAlertIcon,
 } from "lucide-react";
 
 import type { Application } from "@/features/applications/api/list-applications.ts";
 
+import { Button } from "@/components/ui/button.tsx";
 import { CopyButton } from "@/components/ui/copy-button.tsx";
 import {
   Empty,
+  EmptyContent,
   EmptyDescription,
   EmptyHeader,
   EmptyMedia,
   EmptyTitle,
 } from "@/components/ui/empty.tsx";
 import { Input } from "@/components/ui/input.tsx";
-import {
-  Pagination,
-  PaginationContent,
-  PaginationItem,
-  PaginationLink,
-  PaginationNext,
-  PaginationPrevious,
-} from "@/components/ui/pagination.tsx";
 import { Skeleton } from "@/components/ui/skeleton.tsx";
 import { ariaSort, SortableHeader } from "@/components/ui/sortable-header.tsx";
+import { TablePagination } from "@/components/ui/table-pagination.tsx";
 import {
   Table,
   TableBody,
@@ -90,7 +86,7 @@ const columns = columnHelper.columns([
 ]);
 
 export function ApplicationsTable() {
-  const { data: applications, error, isError, isPending } = useApplications();
+  const { data: applications, error, isError, isPending, refetch } = useApplications();
 
   const table = useTable({
     columns,
@@ -133,6 +129,12 @@ export function ApplicationsTable() {
           <EmptyTitle>Could not load applications</EmptyTitle>
           <EmptyDescription>{error.message}</EmptyDescription>
         </EmptyHeader>
+        <EmptyContent>
+          <Button onClick={() => void refetch()} variant="outline">
+            <RefreshCwIcon />
+            Try again
+          </Button>
+        </EmptyContent>
       </Empty>
     );
   }
@@ -156,8 +158,6 @@ export function ApplicationsTable() {
   const rows = table.getRowModel().rows;
   const matchCount = table.getPrePaginatedRowModel().rows.length;
   const { pageIndex, pageSize } = table.state.pagination;
-  const firstRow = pageIndex * pageSize + 1;
-  const lastRow = Math.min(firstRow + pageSize - 1, matchCount);
 
   return (
     <div className="flex flex-col gap-4">
@@ -222,60 +222,13 @@ export function ApplicationsTable() {
         </Table>
       </div>
 
-      {table.getPageCount() > 1 && (
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <p className="text-sm text-muted-foreground">
-            {firstRow}
-            –
-            {lastRow}
-            {" of "}
-            {matchCount}
-          </p>
-
-          <Pagination className="mx-0 w-auto justify-end">
-            <PaginationContent>
-              <PaginationItem>
-                <PaginationPrevious
-                  aria-disabled={!table.getCanPreviousPage()}
-                  className={table.getCanPreviousPage() ? undefined : "pointer-events-none opacity-50"}
-                  href="#"
-                  onClick={(event) => {
-                    event.preventDefault();
-                    table.previousPage();
-                  }}
-                />
-              </PaginationItem>
-
-              {table.getPageOptions().map(page => (
-                <PaginationItem key={page}>
-                  <PaginationLink
-                    href="#"
-                    isActive={page === pageIndex}
-                    onClick={(event) => {
-                      event.preventDefault();
-                      table.setPageIndex(page);
-                    }}
-                  >
-                    {page + 1}
-                  </PaginationLink>
-                </PaginationItem>
-              ))}
-
-              <PaginationItem>
-                <PaginationNext
-                  aria-disabled={!table.getCanNextPage()}
-                  className={table.getCanNextPage() ? undefined : "pointer-events-none opacity-50"}
-                  href="#"
-                  onClick={(event) => {
-                    event.preventDefault();
-                    table.nextPage();
-                  }}
-                />
-              </PaginationItem>
-            </PaginationContent>
-          </Pagination>
-        </div>
-      )}
+      <TablePagination
+        matchCount={matchCount}
+        onPageChange={page => table.setPageIndex(page)}
+        pageCount={table.getPageCount()}
+        pageIndex={pageIndex}
+        pageSize={pageSize}
+      />
     </div>
   );
 }

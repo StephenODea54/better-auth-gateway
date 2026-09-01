@@ -1,9 +1,11 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { AppWindowIcon } from "lucide-react";
+import { AppWindowIcon, RefreshCwIcon, TriangleAlertIcon } from "lucide-react";
 import { useState } from "react";
 
+import { Button } from "@/components/ui/button.tsx";
 import {
   Empty,
+  EmptyContent,
   EmptyDescription,
   EmptyHeader,
   EmptyMedia,
@@ -26,7 +28,7 @@ export const Route = createFileRoute("/dashboard/roles")({
 });
 
 export function Roles() {
-  const { data: applications, isPending } = useApplications();
+  const { data: applications, error, isError, isPending, refetch } = useApplications();
   const [selectedId, setSelectedId] = useState("");
 
   const organizationId = selectedId || applications?.[0]?.id || "";
@@ -41,6 +43,24 @@ export function Roles() {
       </div>
 
       {isPending && <Skeleton className="h-9 w-56" />}
+
+      {isError && (
+        <Empty className="flex-1 rounded-xl border">
+          <EmptyHeader>
+            <EmptyMedia variant="icon">
+              <TriangleAlertIcon />
+            </EmptyMedia>
+            <EmptyTitle>Could not load applications</EmptyTitle>
+            <EmptyDescription>{error.message}</EmptyDescription>
+          </EmptyHeader>
+          <EmptyContent>
+            <Button onClick={() => void refetch()} variant="outline">
+              <RefreshCwIcon />
+              Try again
+            </Button>
+          </EmptyContent>
+        </Empty>
+      )}
 
       {applications && applications.length > 0 && (
         <Select onValueChange={setSelectedId} value={organizationId}>

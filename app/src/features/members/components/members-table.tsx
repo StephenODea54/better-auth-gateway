@@ -6,34 +6,33 @@ import {
   createCoreRowModel,
   createFilteredRowModel,
   createPaginatedRowModel,
-  filterFn_includesString,
+  createSortedRowModel,
   flexRender,
   rowPaginationFeature,
+  rowSortingFeature,
+  sortFn_datetime,
+  sortFn_text,
   useTable,
 } from "@tanstack/react-table";
-import { SearchIcon, TriangleAlertIcon, UsersIcon } from "lucide-react";
+import { RefreshCwIcon, SearchIcon, TriangleAlertIcon, UsersIcon } from "lucide-react";
 import { useMemo } from "react";
 
 import type { Member } from "@/features/members/api/list-members.ts";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar.tsx";
+import { Button } from "@/components/ui/button.tsx";
 import {
   Empty,
+  EmptyContent,
   EmptyDescription,
   EmptyHeader,
   EmptyMedia,
   EmptyTitle,
 } from "@/components/ui/empty.tsx";
 import { Input } from "@/components/ui/input.tsx";
-import {
-  Pagination,
-  PaginationContent,
-  PaginationItem,
-  PaginationLink,
-  PaginationNext,
-  PaginationPrevious,
-} from "@/components/ui/pagination.tsx";
 import { Skeleton } from "@/components/ui/skeleton.tsx";
+import { ariaSort, SortableHeader } from "@/components/ui/sortable-header.tsx";
+import { TablePagination } from "@/components/ui/table-pagination.tsx";
 import {
   Table,
   TableBody,
@@ -58,7 +57,7 @@ interface MembersTableProps {
 }
 
 export function MembersTable({ organizationId }: MembersTableProps) {
-  const { data: members, error, isError, isPending } = useMembers({ organizationId });
+  const { data: members, error, isError, isPending, refetch } = useMembers({ organizationId });
 
   const columns = useMemo(() => columnHelper.columns([
     columnHelper.accessor("name", {
@@ -76,6 +75,12 @@ export function MembersTable({ organizationId }: MembersTableProps) {
           </div>
         </div>
       ),
+      filterFn: (row, _columnId, filterValue: string) => {
+        const term = filterValue.trim().toLowerCase();
+
+        return row.original.name.toLowerCase().includes(term)
+          || row.original.email.toLowerCase().includes(term);
+      },
       header: "Member",
     }),
     columnHelper.accessor("roles", {
@@ -96,6 +101,7 @@ export function MembersTable({ organizationId }: MembersTableProps) {
           ))}
         </div>
       ),
+      enableSorting: false,
       header: "Roles",
     }),
     columnHelper.accessor("createdAt", {
@@ -118,15 +124,21 @@ export function MembersTable({ organizationId }: MembersTableProps) {
   const table = useTable({
     columns,
     data: members ?? [],
+    enableSortingRemoval: false,
     features: {
       columnFilteringFeature,
       coreRowModel: createCoreRowModel(),
       filteredRowModel: createFilteredRowModel(),
-      filterFns: { includesString: filterFn_includesString },
       paginatedRowModel: createPaginatedRowModel(),
       rowPaginationFeature,
+      rowSortingFeature,
+      sortedRowModel: createSortedRowModel(),
+      sortFns: { datetime: sortFn_datetime, text: sortFn_text },
     },
-    initialState: { pagination: { pageIndex: 0, pageSize: 10 } },
+    initialState: {
+      pagination: { pageIndex: 0, pageSize: 10 },
+      sorting: [{ desc: false, id: "name" }],
+    },
   });
 
   if (isPending) {
@@ -149,6 +161,12 @@ export function MembersTable({ organizationId }: MembersTableProps) {
           <EmptyTitle>Could not load members</EmptyTitle>
           <EmptyDescription>{error.message}</EmptyDescription>
         </EmptyHeader>
+        <EmptyContent>
+          <Button onClick={() => void refetch()} variant="outline">
+            <RefreshCwIcon />
+            Try again
+          </Button>
+        </EmptyContent>
       </Empty>
     );
   }
@@ -174,18 +192,16 @@ export function MembersTable({ organizationId }: MembersTableProps) {
   const rows = table.getRowModel().rows;
   const matchCount = table.getPrePaginatedRowModel().rows.length;
   const { pageIndex, pageSize } = table.state.pagination;
-  const firstRow = pageIndex * pageSize + 1;
-  const lastRow = Math.min(firstRow + pageSize - 1, matchCount);
 
   return (
     <div className="flex flex-col gap-4">
       <div className="relative max-w-sm">
         <SearchIcon className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
         <Input
-          aria-label="Search members by name"
+          aria-label="Search members by name or email"
           className="pl-9"
           onChange={event => nameColumn?.setFilterValue(event.target.value)}
-          placeholder="Search by name"
+          placeholder="Search by name or email"
           type="search"
           value={search}
         />
@@ -197,8 +213,20 @@ export function MembersTable({ organizationId }: MembersTableProps) {
             {table.getHeaderGroups().map(headerGroup => (
               <TableRow key={headerGroup.id}>
                 {headerGroup.headers.map(header => (
-                  <TableHead key={header.id}>
-                    {flexRender(header.column.columnDef.header, header.getContext())}
+                  <TableHead
+                    aria-sort={header.column.getCanSort() ? ariaSort(header.column.getIsSorted()) : undefined}
+                    key={header.id}
+                  >
+                    {header.column.getCanSort()
+                      ? (
+                          <SortableHeader
+                            onToggle={header.column.getToggleSortingHandler()}
+                            sorted={header.column.getIsSorted()}
+                          >
+                            {flexRender(header.column.columnDef.header, header.getContext())}
+                          </SortableHeader>
+                        )
+                      : flexRender(header.column.columnDef.header, header.getContext())}
                   </TableHead>
                 ))}
               </TableRow>
@@ -228,60 +256,13 @@ export function MembersTable({ organizationId }: MembersTableProps) {
         </Table>
       </div>
 
-      {table.getPageCount() > 1 && (
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <p className="text-sm text-muted-foreground">
-            {firstRow}
-            –
-            {lastRow}
-            {" of "}
-            {matchCount}
-          </p>
-
-          <Pagination className="mx-0 w-auto justify-end">
-            <PaginationContent>
-              <PaginationItem>
-                <PaginationPrevious
-                  aria-disabled={!table.getCanPreviousPage()}
-                  className={table.getCanPreviousPage() ? undefined : "pointer-events-none opacity-50"}
-                  href="#"
-                  onClick={(event) => {
-                    event.preventDefault();
-                    table.previousPage();
-                  }}
-                />
-              </PaginationItem>
-
-              {table.getPageOptions().map(page => (
-                <PaginationItem key={page}>
-                  <PaginationLink
-                    href="#"
-                    isActive={page === pageIndex}
-                    onClick={(event) => {
-                      event.preventDefault();
-                      table.setPageIndex(page);
-                    }}
-                  >
-                    {page + 1}
-                  </PaginationLink>
-                </PaginationItem>
-              ))}
-
-              <PaginationItem>
-                <PaginationNext
-                  aria-disabled={!table.getCanNextPage()}
-                  className={table.getCanNextPage() ? undefined : "pointer-events-none opacity-50"}
-                  href="#"
-                  onClick={(event) => {
-                    event.preventDefault();
-                    table.nextPage();
-                  }}
-                />
-              </PaginationItem>
-            </PaginationContent>
-          </Pagination>
-        </div>
-      )}
+      <TablePagination
+        matchCount={matchCount}
+        onPageChange={page => table.setPageIndex(page)}
+        pageCount={table.getPageCount()}
+        pageIndex={pageIndex}
+        pageSize={pageSize}
+      />
     </div>
   );
 }

@@ -1,11 +1,12 @@
 import { useForm } from "@tanstack/react-form";
-import { Loader2Icon, TriangleAlertIcon, UserPlusIcon } from "lucide-react";
+import { Loader2Icon, RefreshCwIcon, TriangleAlertIcon, UserPlusIcon } from "lucide-react";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button.tsx";
 import {
   Empty,
+  EmptyContent,
   EmptyDescription,
   EmptyHeader,
   EmptyMedia,
@@ -165,6 +166,12 @@ export function AddMemberSheet({ organizationId }: AddMemberSheetProps) {
                   <EmptyTitle>Could not load roles</EmptyTitle>
                   <EmptyDescription>{rolesQuery.error.message}</EmptyDescription>
                 </EmptyHeader>
+                <EmptyContent>
+                  <Button onClick={() => void rolesQuery.refetch()} variant="outline">
+                    <RefreshCwIcon />
+                    Try again
+                  </Button>
+                </EmptyContent>
               </Empty>
             )}
 
