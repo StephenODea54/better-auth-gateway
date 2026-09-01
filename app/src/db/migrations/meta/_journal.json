@@ -29,6 +29,13 @@
       "when": 1788225173840,
       "tag": "0003_left_sister_grimm",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1788274660157,
+      "tag": "0004_curly_sleepwalker",
+      "breakpoints": true
     }
   ]
 }
