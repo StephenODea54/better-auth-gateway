@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Security issue
+    url: https://github.com/StephenODea54/better-auth-gateway/security/advisories/new
+    about: Report a vulnerability privately. Please do not open a public issue.
+  - name: Question or idea
+    url: https://github.com/StephenODea54/better-auth-gateway/discussions
+    about: Ask how something works, or float an idea before writing it up as a request.

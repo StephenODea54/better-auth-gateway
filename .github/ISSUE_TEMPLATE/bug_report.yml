@@ -1,0 +1,65 @@
+name: Bug report
+description: Something the gateway does that it should not.
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        If the problem is that a specific identity provider will not work, use the
+        **IdP compatibility** template instead. It asks for the things needed to
+        diagnose SAML.
+
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened
+      description: What you expected, and what you got instead.
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: How to reproduce
+      placeholder: |
+        1. Register an application with origin https://…
+        2. Add a member with the auditor role
+        3. Call /api/token?application=…
+    validations:
+      required: true
+
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      description: Image tag or commit SHA.
+      placeholder: ghcr.io/stephenodea54/better-auth-gateway:v0.3.1
+    validations:
+      required: true
+
+  - type: dropdown
+    id: how-running
+    attributes:
+      label: How are you running it
+      options:
+        - Published image
+        - Image built from source
+        - compose.yaml (local development)
+        - pnpm dev on the host
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs
+      description: >
+        Gateway logs from around the failure, and the relevant row from the Activity
+        page if there is one. Redact tokens, certificates and email addresses.
+      render: text
+
+  - type: textarea
+    id: notes
+    attributes:
+      label: Anything else
+      description: Postgres version, reverse proxy, anything unusual about the deployment.

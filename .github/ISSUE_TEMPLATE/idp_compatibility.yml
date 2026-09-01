@@ -1,0 +1,55 @@
+name: IdP compatibility
+description: Sign-in does not work against a particular identity provider.
+labels: [bug, idp]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Nothing in the gateway is written against one vendor, so this is usually an
+        attribute the provider names differently. **Redact certificates, signatures
+        and real email addresses before pasting anything.**
+
+  - type: input
+    id: provider
+    attributes:
+      label: Identity provider
+      placeholder: Entra ID, Okta, Google Workspace, Keycloak, …
+    validations:
+      required: true
+
+  - type: dropdown
+    id: where
+    attributes:
+      label: Where it fails
+      options:
+        - Signing in to the gateway itself
+        - Signing in through a registered application's provider
+        - Sign-in works, but the name or email is wrong
+    validations:
+      required: true
+
+  - type: textarea
+    id: symptom
+    attributes:
+      label: What you see
+      description: The error, the redirect loop, or the wrong value that ends up on the account.
+    validations:
+      required: true
+
+  - type: textarea
+    id: attributes
+    attributes:
+      label: Assertion attributes
+      description: >
+        The attribute names your IdP sends, and the NameID format. Names only is
+        fine; values are rarely needed.
+      render: text
+
+  - type: textarea
+    id: mapping
+    attributes:
+      label: Attribute mapping in use
+      description: >
+        Your SSO_ATTRIBUTE_* values, or the Attribute mapping fields on the
+        application, if you have set any.
+      render: text

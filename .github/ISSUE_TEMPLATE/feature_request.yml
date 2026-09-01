@@ -1,0 +1,39 @@
+name: Feature request
+description: Something the gateway should do and does not.
+labels: [enhancement]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        The **Roadmap** and **Scope** sections of the README are worth a look first.
+        Roadmap items already exist as ideas, and a comment saying you need one is
+        more useful than a duplicate. Scope lists what this deliberately will not do.
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: The problem
+      description: What you are trying to do, and where the gateway gets in the way.
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: What you would want
+      description: Roughly how it should behave. A sketch is fine; it does not have to be a design.
+    validations:
+      required: true
+
+  - type: textarea
+    id: workaround
+    attributes:
+      label: What you are doing instead
+      description: The workaround you have now, if any, and why it is not enough.
+
+  - type: checkboxes
+    id: offer
+    attributes:
+      label: Would you write it
+      options:
+        - label: I would be willing to open a pull request for this.

@@ -217,6 +217,59 @@ Things this deliberately does not do:
 - **Built for internal apps**, where the same population of people uses every app.
   It is not designed for customer-facing sign-up.
 
+## Roadmap
+
+Rough order, not dates, and nothing here is a promise. Most of it is a rough edge
+somebody will hit before I do; if one of these is in your way, say so on an issue
+and it moves up.
+
+### Next
+
+- **A health endpoint.** There is nothing for a load balancer or a `HEALTHCHECK` to
+  probe, so a container that has lost its database still looks up.
+- **Migrations on start.** The image deliberately does not migrate, so every upgrade
+  needs a checkout and `pnpm db:migrate`. An opt-in flag would drop that step for
+  small deployments without taking the choice away from larger ones.
+- **arm64 images.** [publish-image.yml](.github/workflows/publish-image.yml) builds
+  amd64 only, so Graviton and Apple silicon run under emulation.
+- **Rate limits on `/api/token`.** Nothing throttles the endpoint, and it does a
+  database lookup before it checks for a session.
+- **Tests against a real database.** The suite covers pure helpers. The token
+  endpoint, the permission writes and the super admin sync are the parts most worth
+  pinning down, and all three need Postgres.
+
+### Later
+
+- **More than one origin per application.** `origin` is a single column, so staging
+  and production have to be registered as separate applications, with their roles
+  and members maintained twice.
+- **Signing key rotation.** Keys are created once and never rolled. Rotation means
+  publishing the new key, waiting out `TOKEN_LIFETIME`, then retiring the old one.
+- **Configurable activity retention.** Ninety days is a constant in
+  [wide-event.ts](app/src/lib/wide-event.ts).
+- **More than one gateway IdP.** `SSO_EMAIL_DOMAIN` routes one domain. A second
+  company domain, or contractors in a separate tenant, needs a second provider.
+- **Roles from SAML attributes.** Roles are assigned in the dashboard. Reading them
+  from a group claim would let a directory that already models this drive it.
+
+### Under consideration
+
+- **Standard OIDC.** The token endpoint is a small custom protocol. A discovery
+  document and an authorization code flow would let anything that already speaks
+  OIDC integrate with no bespoke code, at the cost of a much larger surface to get
+  right.
+- **Machine tokens.** A client credentials path for scheduled jobs and
+  service-to-service calls, which have no person and no browser session.
+- **Activity export.** Shipping wide events to a SIEM instead of only reading them
+  in the dashboard.
+
+## Contributing
+
+Bug reports, IdP compatibility reports and pull requests are all welcome.
+[CONTRIBUTING.md](CONTRIBUTING.md) covers the development loop and what a reviewable
+change looks like; [app/README.md](app/README.md) covers the setup itself. Security
+issues go through [SECURITY.md](SECURITY.md) rather than the issue tracker.
+
 ## License
 
 [MIT](LICENSE).
