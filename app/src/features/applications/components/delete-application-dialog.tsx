@@ -1,18 +1,8 @@
-import { Loader2Icon } from "lucide-react";
 import { toast } from "sonner";
 
 import type { Application } from "@/features/applications/api/list-applications.ts";
 
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog.tsx";
+import { ConfirmActionDialog } from "@/components/ui/confirm-action-dialog.tsx";
 import { useDeleteApplication } from "@/features/applications/api/delete-application.ts";
 
 interface DeleteApplicationDialogProps {
@@ -36,42 +26,17 @@ export function DeleteApplicationDialog({ application, onOpenChange, open }: Del
   });
 
   return (
-    <AlertDialog onOpenChange={onOpenChange} open={open}>
-      <AlertDialogContent>
-        <AlertDialogHeader>
-          <AlertDialogTitle>
-            Delete
-            {" "}
-            {application.name}
-            ?
-          </AlertDialogTitle>
-          <AlertDialogDescription>
-            This removes the application, its members and its identity provider connection. Anyone signing in
-            through it will be turned away. This cannot be undone.
-          </AlertDialogDescription>
-        </AlertDialogHeader>
-
-        <AlertDialogFooter>
-          <AlertDialogCancel disabled={deleteApplication.isPending}>Cancel</AlertDialogCancel>
-          <AlertDialogAction
-            disabled={deleteApplication.isPending}
-            onClick={(event) => {
-              event.preventDefault();
-              deleteApplication.mutate({ data: { id: application.id, name: application.name } });
-            }}
-            variant="destructive"
-          >
-            {deleteApplication.isPending
-              ? (
-                  <>
-                    <Loader2Icon className="animate-spin" />
-                    Deleting…
-                  </>
-                )
-              : "Delete application"}
-          </AlertDialogAction>
-        </AlertDialogFooter>
-      </AlertDialogContent>
-    </AlertDialog>
+    <ConfirmActionDialog
+      confirmLabel="Delete application"
+      description="This removes the application, its members and its identity provider connection. Anyone signing in through it will be turned away. This cannot be undone."
+      isPending={deleteApplication.isPending}
+      onConfirm={() => deleteApplication.mutate({
+        data: { id: application.id, name: application.name },
+      })}
+      onOpenChange={onOpenChange}
+      open={open}
+      pendingLabel="Deleting…"
+      title={`Delete ${application.name}?`}
+    />
   );
 }

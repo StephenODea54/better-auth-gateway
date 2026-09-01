@@ -1,46 +1,22 @@
 import type { TableFeatures } from "@tanstack/react-table";
 
-import {
-  columnFilteringFeature,
-  createColumnHelper,
-  createCoreRowModel,
-  createFilteredRowModel,
-  createPaginatedRowModel,
-  createSortedRowModel,
-  flexRender,
-  rowPaginationFeature,
-  rowSortingFeature,
-  sortFn_datetime,
-  sortFn_text,
-  useTable,
-} from "@tanstack/react-table";
-import { RefreshCwIcon, SearchIcon, TriangleAlertIcon, UsersIcon } from "lucide-react";
+import { createColumnHelper } from "@tanstack/react-table";
+import { UsersIcon } from "lucide-react";
 import { useMemo } from "react";
 
 import type { Member } from "@/features/members/api/list-members.ts";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar.tsx";
-import { Button } from "@/components/ui/button.tsx";
+import { DataTable } from "@/components/ui/data-table.tsx";
 import {
   Empty,
-  EmptyContent,
   EmptyDescription,
   EmptyHeader,
   EmptyMedia,
   EmptyTitle,
 } from "@/components/ui/empty.tsx";
-import { Input } from "@/components/ui/input.tsx";
+import { LoadError } from "@/components/ui/load-error.tsx";
 import { Skeleton } from "@/components/ui/skeleton.tsx";
-import { ariaSort, SortableHeader } from "@/components/ui/sortable-header.tsx";
-import { TablePagination } from "@/components/ui/table-pagination.tsx";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table.tsx";
 import { useMembers } from "@/features/members/api/list-members.ts";
 import { MemberActions } from "@/features/members/components/member-actions.tsx";
 
@@ -121,26 +97,6 @@ export function MembersTable({ organizationId }: MembersTableProps) {
     }),
   ]), [organizationId]);
 
-  const table = useTable({
-    columns,
-    data: members ?? [],
-    enableSortingRemoval: false,
-    features: {
-      columnFilteringFeature,
-      coreRowModel: createCoreRowModel(),
-      filteredRowModel: createFilteredRowModel(),
-      paginatedRowModel: createPaginatedRowModel(),
-      rowPaginationFeature,
-      rowSortingFeature,
-      sortedRowModel: createSortedRowModel(),
-      sortFns: { datetime: sortFn_datetime, text: sortFn_text },
-    },
-    initialState: {
-      pagination: { pageIndex: 0, pageSize: 10 },
-      sorting: [{ desc: false, id: "name" }],
-    },
-  });
-
   if (isPending) {
     return (
       <div className="flex flex-col gap-2 rounded-xl border p-4">
@@ -153,116 +109,38 @@ export function MembersTable({ organizationId }: MembersTableProps) {
 
   if (isError) {
     return (
-      <Empty className="flex-1 rounded-xl border">
-        <EmptyHeader>
-          <EmptyMedia variant="icon">
-            <TriangleAlertIcon />
-          </EmptyMedia>
-          <EmptyTitle>Could not load members</EmptyTitle>
-          <EmptyDescription>{error.message}</EmptyDescription>
-        </EmptyHeader>
-        <EmptyContent>
-          <Button onClick={() => void refetch()} variant="outline">
-            <RefreshCwIcon />
-            Try again
-          </Button>
-        </EmptyContent>
-      </Empty>
+      <LoadError
+        className="flex-1"
+        message={error.message}
+        onRetry={() => void refetch()}
+        title="Could not load members"
+      />
     );
   }
-
-  if (members.length === 0) {
-    return (
-      <Empty className="flex-1 rounded-xl border">
-        <EmptyHeader>
-          <EmptyMedia variant="icon">
-            <UsersIcon />
-          </EmptyMedia>
-          <EmptyTitle>No members yet</EmptyTitle>
-          <EmptyDescription>
-            Add someone who has signed in to the gateway, and pick the roles they hold here.
-          </EmptyDescription>
-        </EmptyHeader>
-      </Empty>
-    );
-  }
-
-  const nameColumn = table.getColumn("name");
-  const search = (nameColumn?.getFilterValue() as string | undefined) ?? "";
-  const rows = table.getRowModel().rows;
-  const matchCount = table.getPrePaginatedRowModel().rows.length;
-  const { pageIndex, pageSize } = table.state.pagination;
 
   return (
-    <div className="flex flex-col gap-4">
-      <div className="relative max-w-sm">
-        <SearchIcon className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
-        <Input
-          aria-label="Search members by name or email"
-          className="pl-9"
-          onChange={event => nameColumn?.setFilterValue(event.target.value)}
-          placeholder="Search by name or email"
-          type="search"
-          value={search}
-        />
-      </div>
-
-      <div className="rounded-xl border">
-        <Table>
-          <TableHeader>
-            {table.getHeaderGroups().map(headerGroup => (
-              <TableRow key={headerGroup.id}>
-                {headerGroup.headers.map(header => (
-                  <TableHead
-                    aria-sort={header.column.getCanSort() ? ariaSort(header.column.getIsSorted()) : undefined}
-                    key={header.id}
-                  >
-                    {header.column.getCanSort()
-                      ? (
-                          <SortableHeader
-                            onToggle={header.column.getToggleSortingHandler()}
-                            sorted={header.column.getIsSorted()}
-                          >
-                            {flexRender(header.column.columnDef.header, header.getContext())}
-                          </SortableHeader>
-                        )
-                      : flexRender(header.column.columnDef.header, header.getContext())}
-                  </TableHead>
-                ))}
-              </TableRow>
-            ))}
-          </TableHeader>
-          <TableBody>
-            {rows.length === 0
-              ? (
-                  <TableRow>
-                    <TableCell className="h-24 text-center text-sm text-muted-foreground" colSpan={columns.length}>
-                      No members match
-                      {" "}
-                      <span className="font-medium text-foreground">{search}</span>
-                    </TableCell>
-                  </TableRow>
-                )
-              : rows.map(row => (
-                  <TableRow key={row.id}>
-                    {row.getAllCells().map(cell => (
-                      <TableCell key={cell.id}>
-                        {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                      </TableCell>
-                    ))}
-                  </TableRow>
-                ))}
-          </TableBody>
-        </Table>
-      </div>
-
-      <TablePagination
-        matchCount={matchCount}
-        onPageChange={page => table.setPageIndex(page)}
-        pageCount={table.getPageCount()}
-        pageIndex={pageIndex}
-        pageSize={pageSize}
-      />
-    </div>
+    <DataTable
+      columns={columns}
+      data={members}
+      emptyState={(
+        <Empty className="flex-1 rounded-xl border">
+          <EmptyHeader>
+            <EmptyMedia variant="icon">
+              <UsersIcon />
+            </EmptyMedia>
+            <EmptyTitle>No members yet</EmptyTitle>
+            <EmptyDescription>
+              Add someone who has signed in to the gateway, and pick the roles they hold here.
+            </EmptyDescription>
+          </EmptyHeader>
+        </Empty>
+      )}
+      enableSortingRemoval={false}
+      initialSorting={[{ desc: false, id: "name" }]}
+      noMatchesLabel="No members match"
+      searchAriaLabel="Search members by name or email"
+      searchColumn="name"
+      searchPlaceholder="Search by name or email"
+    />
   );
 }

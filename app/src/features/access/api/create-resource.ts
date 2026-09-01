@@ -1,15 +1,14 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { createServerFn } from "@tanstack/react-start";
-import { getRequest } from "@tanstack/react-start/server";
-import { and, eq, ne } from "drizzle-orm";
 import { z } from "zod";
 
 import type { MutationConfig } from "@/lib/react-query.ts";
 
 import { db } from "@/db/clients/db-client.ts";
-import { organizationRole } from "@/db/schema/index.ts";
-import { auth } from "@/features/auth/clients/server-client.ts";
-import { setEvent, setEventError } from "@/lib/wide-event.ts";
+import { readCatalog, sweepActions, writeCatalog } from "@/features/access/lib/catalog.ts";
+import { requireOrgPermission } from "@/features/auth/lib/guards.ts";
+import { toFriendlyError } from "@/lib/errors.ts";
+import { setEvent } from "@/lib/wide-event.ts";
 
 import { listResourcesQueryOptions } from "./list-resources.ts";
 
@@ -31,100 +30,28 @@ export const createResource = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     setEvent({ "event.kind": "resource.saved", "organization.id": data.organizationId });
 
-    const { success } = await auth.api.hasPermission({
-      body: {
-        organizationId: data.organizationId,
-        permissions: { ac: ["create"] },
-      },
-      headers: getRequest().headers,
-    });
-
-    if (!success) {
-      throw new Error("You do not have permission to change this application's resources.");
-    }
+    await requireOrgPermission(
+      data.organizationId,
+      { ac: ["create"] },
+      "You do not have permission to change this application's resources.",
+    );
 
     const actions = [...new Set(data.actions)].sort();
 
     try {
       await db.transaction(async (tx) => {
-        const [catalogRole] = await tx
-          .select()
-          .from(organizationRole)
-          .where(and(
-            eq(organizationRole.organizationId, data.organizationId),
-            eq(organizationRole.role, "owner"),
-          ))
-          .limit(1)
-          .for("update");
-
-        const catalog = catalogRole
-          ? JSON.parse(catalogRole.permission) as Record<string, string[]>
-          : {};
+        const { catalog, row } = await readCatalog(tx, data.organizationId, { forUpdate: true });
 
         const revoked = (catalog[data.key] ?? []).filter(action => !actions.includes(action));
 
         catalog[data.key] = actions;
 
-        if (catalogRole) {
-          await tx
-            .update(organizationRole)
-            .set({ permission: JSON.stringify(catalog) })
-            .where(eq(organizationRole.id, catalogRole.id));
-        }
-        else {
-          await tx.insert(organizationRole).values({
-            createdAt: new Date(),
-            id: crypto.randomUUID(),
-            organizationId: data.organizationId,
-            permission: JSON.stringify(catalog),
-            role: "owner",
-          });
-        }
-
-        if (revoked.length === 0) {
-          return;
-        }
-
-        const grantedRoles = await tx
-          .select()
-          .from(organizationRole)
-          .where(and(
-            eq(organizationRole.organizationId, data.organizationId),
-            ne(organizationRole.role, "owner"),
-          ))
-          .for("update");
-
-        for (const grantedRole of grantedRoles) {
-          const grants = JSON.parse(grantedRole.permission) as Record<string, string[]>;
-          const granted = grants[data.key];
-
-          if (!granted) {
-            continue;
-          }
-
-          const remaining = granted.filter(action => !revoked.includes(action));
-
-          if (remaining.length === granted.length) {
-            continue;
-          }
-
-          if (remaining.length === 0) {
-            delete grants[data.key];
-          }
-          else {
-            grants[data.key] = remaining;
-          }
-
-          await tx
-            .update(organizationRole)
-            .set({ permission: JSON.stringify(grants) })
-            .where(eq(organizationRole.id, grantedRole.id));
-        }
+        await writeCatalog(tx, data.organizationId, row, catalog);
+        await sweepActions(tx, data.organizationId, data.key, revoked);
       });
     }
     catch (error) {
-      setEventError(error);
-      throw new Error("Could not save this resource.");
+      throw toFriendlyError(error, "Could not save this resource.");
     }
 
     return { actions, key: data.key };

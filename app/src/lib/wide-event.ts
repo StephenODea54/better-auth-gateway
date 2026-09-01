@@ -28,7 +28,11 @@ export function countEvent(key: string) {
 }
 
 export function setEvent(fields: EventFields) {
-  Object.assign(storage?.getStore() ?? {}, fields);
+  const event = storage?.getStore();
+
+  if (event) {
+    Object.assign(event, fields);
+  }
 }
 
 export function setEventError(error: unknown) {

@@ -1,16 +1,18 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { createServerFn } from "@tanstack/react-start";
-import { getRequest } from "@tanstack/react-start/server";
 import { and, eq } from "drizzle-orm";
 import { z } from "zod";
 
+import type { PermissionMap } from "@/features/access/lib/permissions.ts";
 import type { MutationConfig } from "@/lib/react-query.ts";
 
 import { db } from "@/db/clients/db-client.ts";
 import { organizationRole } from "@/db/schema/index.ts";
-import { auth } from "@/features/auth/clients/server-client.ts";
+import { readCatalog } from "@/features/access/lib/catalog.ts";
 import { ac, roles } from "@/features/auth/lib/access-control.ts";
-import { setEvent, setEventError } from "@/lib/wide-event.ts";
+import { requireOrgPermission } from "@/features/auth/lib/guards.ts";
+import { toFriendlyError } from "@/lib/errors.ts";
+import { setEvent } from "@/lib/wide-event.ts";
 
 import { listRolesQueryOptions } from "./list-roles.ts";
 
@@ -27,17 +29,11 @@ export const updateRole = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     setEvent({ "event.kind": "role.updated", "organization.id": data.organizationId });
 
-    const { success } = await auth.api.hasPermission({
-      body: {
-        organizationId: data.organizationId,
-        permissions: { ac: ["update"] },
-      },
-      headers: getRequest().headers,
-    });
-
-    if (!success) {
-      throw new Error("You do not have permission to change this application's roles.");
-    }
+    await requireOrgPermission(
+      data.organizationId,
+      { ac: ["update"] },
+      "You do not have permission to change this application's roles.",
+    );
 
     if (data.role in roles) {
       throw new Error("Built-in roles are defined in code and cannot be edited here.");
@@ -56,23 +52,11 @@ export const updateRole = createServerFn({ method: "POST" })
       throw new Error("This role no longer exists.");
     }
 
-    const permission: Record<string, string[]> = {};
+    const permission: PermissionMap = {};
 
     try {
       await db.transaction(async (tx) => {
-        const [catalogRole] = await tx
-          .select({ permission: organizationRole.permission })
-          .from(organizationRole)
-          .where(and(
-            eq(organizationRole.organizationId, data.organizationId),
-            eq(organizationRole.role, "owner"),
-          ))
-          .limit(1)
-          .for("update");
-
-        const catalog = catalogRole
-          ? JSON.parse(catalogRole.permission) as Record<string, string[]>
-          : {};
+        const { catalog } = await readCatalog(tx, data.organizationId, { forUpdate: true });
 
         const statements = ac.statements as Record<string, readonly string[]>;
 
@@ -92,8 +76,7 @@ export const updateRole = createServerFn({ method: "POST" })
       });
     }
     catch (error) {
-      setEventError(error);
-      throw new Error("Could not save this role.");
+      throw toFriendlyError(error, "Could not save this role.");
     }
 
     return { permission, role: data.role };

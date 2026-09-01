@@ -1,6 +1,5 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { createServerFn } from "@tanstack/react-start";
-import { getRequest } from "@tanstack/react-start/server";
 import { and, eq } from "drizzle-orm";
 import { z } from "zod";
 
@@ -8,10 +7,11 @@ import type { MutationConfig } from "@/lib/react-query.ts";
 
 import { db } from "@/db/clients/db-client.ts";
 import { organizationRole } from "@/db/schema/index.ts";
-import { auth } from "@/features/auth/clients/server-client.ts";
 import { roles } from "@/features/auth/lib/access-control.ts";
+import { requireOrgPermission } from "@/features/auth/lib/guards.ts";
 import { SUPER_ADMIN_MEMBER_MARKER } from "@/features/auth/lib/super-admin.ts";
-import { setEvent, setEventError } from "@/lib/wide-event.ts";
+import { toFriendlyError } from "@/lib/errors.ts";
+import { setEvent } from "@/lib/wide-event.ts";
 
 import { listRolesQueryOptions } from "./list-roles.ts";
 
@@ -30,17 +30,11 @@ export const createRole = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     setEvent({ "event.kind": "role.created", "organization.id": data.organizationId });
 
-    const { success } = await auth.api.hasPermission({
-      body: {
-        organizationId: data.organizationId,
-        permissions: { ac: ["create"] },
-      },
-      headers: getRequest().headers,
-    });
-
-    if (!success) {
-      throw new Error("You do not have permission to change this application's roles.");
-    }
+    await requireOrgPermission(
+      data.organizationId,
+      { ac: ["create"] },
+      "You do not have permission to change this application's roles.",
+    );
 
     if (data.role in roles || data.role === SUPER_ADMIN_MEMBER_MARKER) {
       throw new Error(`${data.role} is a built-in role name.`);
@@ -69,8 +63,7 @@ export const createRole = createServerFn({ method: "POST" })
       });
     }
     catch (error) {
-      setEventError(error);
-      throw new Error("Could not create this role.");
+      throw toFriendlyError(error, "Could not create this role.");
     }
 
     return { role: data.role };

@@ -21,6 +21,27 @@ import {
 } from "@/features/auth/lib/super-admin.ts";
 import { setEvent } from "@/lib/wide-event.ts";
 
+interface SessionResult {
+  session?: { id?: string };
+  user?: { email?: string; id?: string; role?: string };
+}
+
+function asSessionResult(value: unknown): SessionResult | undefined {
+  if (typeof value !== "object" || value === null || !("user" in value)) {
+    return undefined;
+  }
+
+  const candidate = value as SessionResult;
+
+  return typeof candidate.user === "object" && candidate.user !== null ? candidate : undefined;
+}
+
+function readSuccess(value: unknown) {
+  return typeof value === "object" && value !== null && "success" in value && typeof value.success === "boolean"
+    ? value.success
+    : false;
+}
+
 export const auth = betterAuth({
   baseURL: env.BETTER_AUTH_URL,
   database: drizzleAdapter(db, {
@@ -57,8 +78,7 @@ export const auth = betterAuth({
   },
   hooks: {
     after: createAuthMiddleware(async (ctx) => {
-      const returned = ctx.context.returned as Record<string, any> | undefined;
-      const session = (ctx.context.session ?? returned) as Record<string, any> | undefined;
+      const session = asSessionResult(ctx.context.session ?? ctx.context.returned);
 
       if (session?.user) {
         setEvent({
@@ -71,7 +91,7 @@ export const auth = betterAuth({
 
       if (ctx.path === "/organization/has-permission") {
         setEvent({
-          "authz.allowed": returned?.success ?? false,
+          "authz.allowed": readSuccess(ctx.context.returned),
           "authz.permissions": JSON.stringify(ctx.body?.permissions),
           "organization.id": ctx.body?.organizationId,
         });

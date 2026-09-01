@@ -1,18 +1,8 @@
-import { Loader2Icon } from "lucide-react";
 import { toast } from "sonner";
 
 import type { Resource } from "@/features/access/api/list-resources.ts";
 
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog.tsx";
+import { ConfirmActionDialog } from "@/components/ui/confirm-action-dialog.tsx";
 import { useDeleteResource } from "@/features/access/api/delete-resource.ts";
 
 interface DeleteResourceDialogProps {
@@ -38,42 +28,15 @@ export function DeleteResourceDialog({ onOpenChange, open, organizationId, resou
   });
 
   return (
-    <AlertDialog onOpenChange={onOpenChange} open={open}>
-      <AlertDialogContent>
-        <AlertDialogHeader>
-          <AlertDialogTitle>
-            Delete
-            {" "}
-            {resource.key}
-            ?
-          </AlertDialogTitle>
-          <AlertDialogDescription>
-            This removes the resource and revokes every one of its actions from all roles in this
-            application. This cannot be undone.
-          </AlertDialogDescription>
-        </AlertDialogHeader>
-
-        <AlertDialogFooter>
-          <AlertDialogCancel disabled={deleteResource.isPending}>Cancel</AlertDialogCancel>
-          <AlertDialogAction
-            disabled={deleteResource.isPending}
-            onClick={(event) => {
-              event.preventDefault();
-              deleteResource.mutate({ data: { key: resource.key, organizationId } });
-            }}
-            variant="destructive"
-          >
-            {deleteResource.isPending
-              ? (
-                  <>
-                    <Loader2Icon className="animate-spin" />
-                    Deleting…
-                  </>
-                )
-              : "Delete resource"}
-          </AlertDialogAction>
-        </AlertDialogFooter>
-      </AlertDialogContent>
-    </AlertDialog>
+    <ConfirmActionDialog
+      confirmLabel="Delete resource"
+      description="This removes the resource and revokes every one of its actions from all roles in this application. This cannot be undone."
+      isPending={deleteResource.isPending}
+      onConfirm={() => deleteResource.mutate({ data: { key: resource.key, organizationId } })}
+      onOpenChange={onOpenChange}
+      open={open}
+      pendingLabel="Deleting…"
+      title={`Delete ${resource.key}?`}
+    />
   );
 }

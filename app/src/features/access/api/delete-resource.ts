@@ -1,15 +1,14 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { createServerFn } from "@tanstack/react-start";
-import { getRequest } from "@tanstack/react-start/server";
-import { and, eq, ne } from "drizzle-orm";
 import { z } from "zod";
 
 import type { MutationConfig } from "@/lib/react-query.ts";
 
 import { db } from "@/db/clients/db-client.ts";
-import { organizationRole } from "@/db/schema/index.ts";
-import { auth } from "@/features/auth/clients/server-client.ts";
-import { setEvent, setEventError } from "@/lib/wide-event.ts";
+import { readCatalog, sweepActions, writeCatalog } from "@/features/access/lib/catalog.ts";
+import { requireOrgPermission } from "@/features/auth/lib/guards.ts";
+import { toFriendlyError } from "@/lib/errors.ts";
+import { setEvent } from "@/lib/wide-event.ts";
 
 import { listResourcesQueryOptions } from "./list-resources.ts";
 
@@ -23,69 +22,30 @@ export const deleteResource = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     setEvent({ "event.kind": "resource.deleted", "organization.id": data.organizationId });
 
-    const { success } = await auth.api.hasPermission({
-      body: {
-        organizationId: data.organizationId,
-        permissions: { ac: ["delete"] },
-      },
-      headers: getRequest().headers,
-    });
-
-    if (!success) {
-      throw new Error("You do not have permission to change this application's resources.");
-    }
+    await requireOrgPermission(
+      data.organizationId,
+      { ac: ["delete"] },
+      "You do not have permission to change this application's resources.",
+    );
 
     try {
       await db.transaction(async (tx) => {
-        const [catalogRole] = await tx
-          .select()
-          .from(organizationRole)
-          .where(and(
-            eq(organizationRole.organizationId, data.organizationId),
-            eq(organizationRole.role, "owner"),
-          ))
-          .limit(1);
+        const { catalog, row } = await readCatalog(tx, data.organizationId, { forUpdate: true });
 
-        if (!catalogRole) {
+        if (!row) {
           return;
         }
 
-        const catalog = JSON.parse(catalogRole.permission) as Record<string, string[]>;
+        const revoked = catalog[data.key] ?? [];
 
         delete catalog[data.key];
 
-        await tx
-          .update(organizationRole)
-          .set({ permission: JSON.stringify(catalog) })
-          .where(eq(organizationRole.id, catalogRole.id));
-
-        const grantedRoles = await tx
-          .select()
-          .from(organizationRole)
-          .where(and(
-            eq(organizationRole.organizationId, data.organizationId),
-            ne(organizationRole.role, "owner"),
-          ));
-
-        for (const grantedRole of grantedRoles) {
-          const grants = JSON.parse(grantedRole.permission) as Record<string, string[]>;
-
-          if (!grants[data.key]) {
-            continue;
-          }
-
-          delete grants[data.key];
-
-          await tx
-            .update(organizationRole)
-            .set({ permission: JSON.stringify(grants) })
-            .where(eq(organizationRole.id, grantedRole.id));
-        }
+        await writeCatalog(tx, data.organizationId, row, catalog);
+        await sweepActions(tx, data.organizationId, data.key, revoked);
       });
     }
     catch (error) {
-      setEventError(error);
-      throw new Error("Could not delete this resource.");
+      throw toFriendlyError(error, "Could not delete this resource.");
     }
 
     return { key: data.key };

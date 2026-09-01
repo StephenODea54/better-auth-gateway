@@ -7,10 +7,10 @@ import { nitro } from "nitro/vite";
 import process from "node:process";
 import { defineConfig } from "vite";
 
-const config = defineConfig({
+const config = defineConfig(({ command }) => ({
   plugins: [
-    devtools(),
-    nitro({ rollupConfig: { external: [/^@sentry\//] } }),
+    ...command === "serve" ? [devtools()] : [],
+    nitro(),
     tailwindcss(),
     tanstackStart(),
     viteReact(),
@@ -24,6 +24,6 @@ const config = defineConfig({
       ? { interval: 300, usePolling: true }
       : undefined,
   },
-});
+}));
 
 export default config;

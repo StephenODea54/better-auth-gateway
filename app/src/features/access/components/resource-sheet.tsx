@@ -1,19 +1,11 @@
 import { useForm } from "@tanstack/react-form";
-import { Loader2Icon } from "lucide-react";
 import { toast } from "sonner";
 import { z } from "zod";
 
 import type { Resource } from "@/features/access/api/list-resources.ts";
 
-import { Button } from "@/components/ui/button.tsx";
-import {
-  Field,
-  FieldDescription,
-  FieldError,
-  FieldGroup,
-  FieldLabel,
-} from "@/components/ui/field.tsx";
-import { Input } from "@/components/ui/input.tsx";
+import { FieldGroup } from "@/components/ui/field.tsx";
+import { LoadingButton } from "@/components/ui/loading-button.tsx";
 import {
   Sheet,
   SheetContent,
@@ -21,7 +13,7 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet.tsx";
-import { Textarea } from "@/components/ui/textarea.tsx";
+import { TextField } from "@/components/ui/text-field.tsx";
 import { useCreateResource } from "@/features/access/api/create-resource.ts";
 
 const IDENTIFIER = /^[a-z0-9][a-z0-9_-]*$/;
@@ -107,76 +99,45 @@ export function ResourceSheet({ onOpenChange, open, organizationId, resource }: 
         >
           <FieldGroup className="px-4">
             <form.Field name="key">
-              {(field) => {
-                const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid;
-
-                return (
-                  <Field data-invalid={isInvalid}>
-                    <FieldLabel htmlFor={field.name}>Resource</FieldLabel>
-                    <Input
-                      aria-invalid={isInvalid}
-                      autoComplete="off"
-                      className="font-mono"
-                      disabled={Boolean(resource)}
-                      id={field.name}
-                      name={field.name}
-                      onBlur={field.handleBlur}
-                      onChange={event => field.handleChange(event.target.value)}
-                      placeholder="invoice"
-                      value={field.state.value}
-                    />
-                    <FieldDescription>
-                      {resource
-                        ? "The resource key cannot be changed once roles are granted against it."
-                        : "The name the application uses for this thing, for example invoice."}
-                    </FieldDescription>
-                    {isInvalid && <FieldError errors={field.state.meta.errors} />}
-                  </Field>
-                );
-              }}
+              {field => (
+                <TextField
+                  className="font-mono"
+                  description={resource
+                    ? "The resource key cannot be changed once roles are granted against it."
+                    : "The name the application uses for this thing, for example invoice."}
+                  disabled={Boolean(resource)}
+                  field={field}
+                  label="Resource"
+                  placeholder="invoice"
+                />
+              )}
             </form.Field>
 
             <form.Field name="actions">
-              {(field) => {
-                const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid;
-
-                return (
-                  <Field data-invalid={isInvalid}>
-                    <FieldLabel htmlFor={field.name}>Actions</FieldLabel>
-                    <Textarea
-                      aria-invalid={isInvalid}
-                      className="field-sizing-fixed font-mono text-xs"
-                      id={field.name}
-                      name={field.name}
-                      onBlur={field.handleBlur}
-                      onChange={event => field.handleChange(event.target.value)}
-                      placeholder={"read\napprove\nvoid"}
-                      rows={8}
-                      value={field.state.value}
-                    />
-                    <FieldDescription>
-                      One per line. Removing an action here also revokes it from every role that
-                      was granted it.
-                    </FieldDescription>
-                    {isInvalid && <FieldError errors={field.state.meta.errors} />}
-                  </Field>
-                );
-              }}
+              {field => (
+                <TextField
+                  as="textarea"
+                  className="field-sizing-fixed font-mono text-xs"
+                  description="One per line. Removing an action here also revokes it from every role that was granted it."
+                  field={field}
+                  label="Actions"
+                  placeholder={"read\napprove\nvoid"}
+                  rows={8}
+                />
+              )}
             </form.Field>
           </FieldGroup>
         </form>
 
         <SheetFooter>
-          <Button disabled={createResource.isPending} form="create-resource" type="submit">
-            {createResource.isPending
-              ? (
-                  <>
-                    <Loader2Icon className="animate-spin" />
-                    Saving…
-                  </>
-                )
-              : "Save resource"}
-          </Button>
+          <LoadingButton
+            form="create-resource"
+            isPending={createResource.isPending}
+            pendingLabel="Saving…"
+            type="submit"
+          >
+            Save resource
+          </LoadingButton>
         </SheetFooter>
       </SheetContent>
     </Sheet>

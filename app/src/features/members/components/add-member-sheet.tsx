@@ -1,17 +1,9 @@
 import { useForm } from "@tanstack/react-form";
-import { Loader2Icon, RefreshCwIcon, TriangleAlertIcon, UserPlusIcon } from "lucide-react";
+import { UserPlusIcon } from "lucide-react";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button.tsx";
-import {
-  Empty,
-  EmptyContent,
-  EmptyDescription,
-  EmptyHeader,
-  EmptyMedia,
-  EmptyTitle,
-} from "@/components/ui/empty.tsx";
 import {
   Field,
   FieldDescription,
@@ -19,7 +11,8 @@ import {
   FieldGroup,
   FieldLabel,
 } from "@/components/ui/field.tsx";
-import { Input } from "@/components/ui/input.tsx";
+import { LoadError } from "@/components/ui/load-error.tsx";
+import { LoadingButton } from "@/components/ui/loading-button.tsx";
 import {
   Sheet,
   SheetContent,
@@ -30,9 +23,10 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet.tsx";
 import { Skeleton } from "@/components/ui/skeleton.tsx";
-import { Switch } from "@/components/ui/switch.tsx";
+import { TextField } from "@/components/ui/text-field.tsx";
 import { useRoles } from "@/features/access/api/list-roles.ts";
 import { addMemberInputSchema, useAddMember } from "@/features/members/api/add-member.ts";
+import { RoleSwitchList } from "@/features/members/components/role-switch-list.tsx";
 
 interface AddMemberSheetProps {
   organizationId: string;
@@ -123,30 +117,15 @@ export function AddMemberSheet({ organizationId }: AddMemberSheetProps) {
         >
           <FieldGroup className="px-4">
             <form.Field name="email">
-              {(field) => {
-                const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid;
-
-                return (
-                  <Field data-invalid={isInvalid}>
-                    <FieldLabel htmlFor={field.name}>Email</FieldLabel>
-                    <Input
-                      aria-invalid={isInvalid}
-                      autoComplete="off"
-                      id={field.name}
-                      name={field.name}
-                      onBlur={field.handleBlur}
-                      onChange={event => field.handleChange(event.target.value)}
-                      placeholder="ada@acme.com"
-                      type="email"
-                      value={field.state.value}
-                    />
-                    <FieldDescription>
-                      They have to have signed in to the gateway at least once.
-                    </FieldDescription>
-                    {isInvalid && <FieldError errors={field.state.meta.errors} />}
-                  </Field>
-                );
-              }}
+              {field => (
+                <TextField
+                  description="They have to have signed in to the gateway at least once."
+                  field={field}
+                  label="Email"
+                  placeholder="ada@acme.com"
+                  type="email"
+                />
+              )}
             </form.Field>
 
             {rolesQuery.isPending && (
@@ -158,21 +137,11 @@ export function AddMemberSheet({ organizationId }: AddMemberSheetProps) {
             )}
 
             {rolesQuery.isError && (
-              <Empty className="rounded-xl border">
-                <EmptyHeader>
-                  <EmptyMedia variant="icon">
-                    <TriangleAlertIcon />
-                  </EmptyMedia>
-                  <EmptyTitle>Could not load roles</EmptyTitle>
-                  <EmptyDescription>{rolesQuery.error.message}</EmptyDescription>
-                </EmptyHeader>
-                <EmptyContent>
-                  <Button onClick={() => void rolesQuery.refetch()} variant="outline">
-                    <RefreshCwIcon />
-                    Try again
-                  </Button>
-                </EmptyContent>
-              </Empty>
+              <LoadError
+                message={rolesQuery.error.message}
+                onRetry={() => void rolesQuery.refetch()}
+                title="Could not load roles"
+              />
             )}
 
             {rolesQuery.isSuccess && (
@@ -184,23 +153,13 @@ export function AddMemberSheet({ organizationId }: AddMemberSheetProps) {
                   return (
                     <Field data-invalid={isInvalid}>
                       <FieldLabel>Roles</FieldLabel>
-                      <div className="overflow-hidden rounded-xl border">
-                        {assignable.map(role => (
-                          <div
-                            className="flex items-center justify-between gap-4 border-b px-4 py-3 last:border-b-0"
-                            key={role}
-                          >
-                            <span className="truncate text-sm font-medium">{role}</span>
-                            <Switch
-                              aria-label={role}
-                              checked={held.has(role)}
-                              onCheckedChange={() => field.handleChange(held.has(role)
-                                ? field.state.value.filter(name => name !== role)
-                                : [...field.state.value, role].sort())}
-                            />
-                          </div>
-                        ))}
-                      </div>
+                      <RoleSwitchList
+                        held={held}
+                        onToggle={role => field.handleChange(held.has(role)
+                          ? field.state.value.filter(name => name !== role)
+                          : [...field.state.value, role].sort())}
+                        roles={assignable}
+                      />
                       <FieldDescription>
                         Only an owner can grant owner.
                       </FieldDescription>
@@ -214,16 +173,14 @@ export function AddMemberSheet({ organizationId }: AddMemberSheetProps) {
         </form>
 
         <SheetFooter>
-          <Button disabled={addMember.isPending} form="add-member" type="submit">
-            {addMember.isPending
-              ? (
-                  <>
-                    <Loader2Icon className="animate-spin" />
-                    Adding…
-                  </>
-                )
-              : "Add member"}
-          </Button>
+          <LoadingButton
+            form="add-member"
+            isPending={addMember.isPending}
+            pendingLabel="Adding…"
+            type="submit"
+          >
+            Add member
+          </LoadingButton>
         </SheetFooter>
       </SheetContent>
     </Sheet>

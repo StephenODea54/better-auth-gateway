@@ -1,4 +1,4 @@
-import { Loader2Icon, Trash2Icon } from "lucide-react";
+import { Trash2Icon } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 
@@ -7,6 +7,7 @@ import type { Role } from "@/features/access/api/list-roles.ts";
 import type { VocabularyGroup } from "@/features/access/lib/permissions.ts";
 
 import { Button } from "@/components/ui/button.tsx";
+import { LoadingButton } from "@/components/ui/loading-button.tsx";
 import { Switch } from "@/components/ui/switch.tsx";
 import { useUpdateRole } from "@/features/access/api/update-role.ts";
 import { DeleteRoleDialog } from "@/features/access/components/delete-role-dialog.tsx";
@@ -98,21 +99,16 @@ export function RolePermissions({
               >
                 Discard
               </Button>
-              <Button
-                disabled={changes === 0 || updateRole.isPending}
+              <LoadingButton
+                disabled={changes === 0}
+                isPending={updateRole.isPending}
                 onClick={() => updateRole.mutate({
                   data: { organizationId, permission, role: role.name },
                 })}
+                pendingLabel="Saving…"
               >
-                {updateRole.isPending
-                  ? (
-                      <>
-                        <Loader2Icon className="animate-spin" />
-                        Saving…
-                      </>
-                    )
-                  : "Save changes"}
-              </Button>
+                Save changes
+              </LoadingButton>
             </>
           )}
           {access.canDelete && (

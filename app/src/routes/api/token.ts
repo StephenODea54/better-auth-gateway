@@ -4,9 +4,9 @@ import { and, eq } from "drizzle-orm";
 import { env } from "@/config/env.ts";
 import { db } from "@/db/clients/db-client.ts";
 import { member, organization, organizationRole } from "@/db/schema/index.ts";
-import { mergePermissions } from "@/features/access/lib/permissions.ts";
+import { mergePermissions, parsePermission } from "@/features/access/lib/permissions.ts";
 import { auth } from "@/features/auth/clients/server-client.ts";
-import { SUPER_ADMIN_MEMBER_MARKER } from "@/features/auth/lib/super-admin.ts";
+import { splitRoles, SUPER_ADMIN_MEMBER_MARKER } from "@/features/auth/lib/super-admin.ts";
 
 function corsHeaders(origin: string) {
   return {
@@ -76,20 +76,14 @@ export const Route = createFileRoute("/api/token")({
           return problem(403, `You are not a member of ${application.slug}.`, allowed);
         }
 
-        const held = membership.role
-          .split(",")
-          .map(role => role.trim())
-          .filter(role => role.length > 0 && role !== SUPER_ADMIN_MEMBER_MARKER);
+        const held = splitRoles(membership.role).filter(role => role !== SUPER_ADMIN_MEMBER_MARKER);
 
         const rows = await db
           .select({ permission: organizationRole.permission, role: organizationRole.role })
           .from(organizationRole)
           .where(eq(organizationRole.organizationId, application.id));
 
-        const stored = new Map(rows.map(row => [
-          row.role,
-          JSON.parse(row.permission) as Record<string, string[]>,
-        ]));
+        const stored = new Map(rows.map(row => [row.role, parsePermission(row.permission)]));
 
         const { token } = await auth.api.signJWT({
           body: {

@@ -1,3 +1,5 @@
+export type PermissionMap = Record<string, string[]>;
+
 export interface VocabularyGroup {
   actions: string[];
   key: string;
@@ -5,7 +7,7 @@ export interface VocabularyGroup {
 
 export function mergePermissions(
   roleNames: string[],
-  stored: Map<string, Record<string, string[]>>,
+  stored: Map<string, PermissionMap>,
 ) {
   const merged: Record<string, Set<string>> = {};
 
@@ -22,7 +24,11 @@ export function mergePermissions(
   );
 }
 
-export function toPairs(permission: Record<string, string[]>) {
+export function parsePermission(permission: string): PermissionMap {
+  return JSON.parse(permission) as PermissionMap;
+}
+
+export function toPairs(permission: PermissionMap) {
   return new Set(
     Object.entries(permission).flatMap(([key, actions]) => actions.map(action => `${key}:${action}`)),
   );

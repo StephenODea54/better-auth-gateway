@@ -1,16 +1,19 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { createServerFn } from "@tanstack/react-start";
 import { getRequest } from "@tanstack/react-start/server";
-import { APIError } from "better-auth/api";
 import { eq } from "drizzle-orm";
 import { z } from "zod";
 
+import type { MemberRole } from "@/features/auth/lib/guards.ts";
 import type { MutationConfig } from "@/lib/react-query.ts";
 
 import { db } from "@/db/clients/db-client.ts";
 import { user } from "@/db/schema/index.ts";
 import { auth } from "@/features/auth/clients/server-client.ts";
-import { setEvent, setEventError } from "@/lib/wide-event.ts";
+import { requireOrgPermission } from "@/features/auth/lib/guards.ts";
+import { splitRoles } from "@/features/auth/lib/super-admin.ts";
+import { toFriendlyError } from "@/lib/errors.ts";
+import { setEvent } from "@/lib/wide-event.ts";
 
 import { listMembersQueryOptions } from "./list-members.ts";
 
@@ -31,30 +34,20 @@ export const addMember = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     setEvent({ "event.kind": "member.added", "organization.id": data.organizationId });
 
-    type MemberRole = NonNullable<Parameters<typeof auth.api.addMember>[0]>["body"]["role"];
-
     const { headers } = getRequest();
 
-    const { success } = await auth.api.hasPermission({
-      body: {
-        organizationId: data.organizationId,
-        permissions: { member: ["create"] },
-      },
-      headers,
-    });
-
-    if (!success) {
-      throw new Error("You do not have permission to add members to this application.");
-    }
+    await requireOrgPermission(
+      data.organizationId,
+      { member: ["create"] },
+      "You do not have permission to add members to this application.",
+    );
 
     if (data.roles.includes("owner")) {
       const { role } = await auth.api
         .getActiveMemberRole({ headers, query: { organizationId: data.organizationId } })
         .catch(() => ({ role: "" }));
 
-      const held = role.split(",").map(name => name.trim());
-
-      if (!held.includes("owner")) {
+      if (!splitRoles(role).includes("owner")) {
         throw new Error("Only an owner can grant the owner role.");
       }
     }
@@ -80,13 +73,7 @@ export const addMember = createServerFn({ method: "POST" })
       });
     }
     catch (error) {
-      setEventError(error);
-
-      if (error instanceof APIError) {
-        throw new Error(error.message);
-      }
-
-      throw new Error("Could not add this member.");
+      throw toFriendlyError(error, "Could not add this member.");
     }
 
     return { email: data.email, name: account.name, roles: data.roles };

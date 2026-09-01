@@ -1,17 +1,19 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { createServerFn } from "@tanstack/react-start";
 import { getRequest } from "@tanstack/react-start/server";
-import { APIError } from "better-auth/api";
 import { eq } from "drizzle-orm";
 import { z } from "zod";
 
+import type { UserRole } from "@/features/auth/lib/guards.ts";
 import type { MutationConfig } from "@/lib/react-query.ts";
 
 import { db } from "@/db/clients/db-client.ts";
 import { user } from "@/db/schema/index.ts";
 import { auth } from "@/features/auth/clients/server-client.ts";
+import { requireSuperAdmin } from "@/features/auth/lib/guards.ts";
 import { isSuperAdmin, withoutSuperAdminRole } from "@/features/auth/lib/super-admin.ts";
-import { setEvent, setEventError } from "@/lib/wide-event.ts";
+import { toFriendlyError } from "@/lib/errors.ts";
+import { setEvent } from "@/lib/wide-event.ts";
 
 import { listSuperAdminsQueryOptions } from "./list-super-admins.ts";
 
@@ -24,14 +26,9 @@ export const revokeSuperAdmin = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     setEvent({ "event.kind": "super_admin.revoked" });
 
-    type UserRole = NonNullable<Parameters<typeof auth.api.setRole>[0]>["body"]["role"];
-
     const { headers } = getRequest();
-    const session = await auth.api.getSession({ headers });
 
-    if (!session || !isSuperAdmin(session.user.role)) {
-      throw new Error("Only gateway super admins can revoke super admin access.");
-    }
+    const session = await requireSuperAdmin("Only gateway super admins can revoke super admin access.");
 
     if (data.userId === session.user.id) {
       throw new Error("You cannot revoke your own super admin access. Ask another super admin to do it.");
@@ -58,13 +55,7 @@ export const revokeSuperAdmin = createServerFn({ method: "POST" })
       });
     }
     catch (error) {
-      setEventError(error);
-
-      if (error instanceof APIError) {
-        throw new Error(error.message);
-      }
-
-      throw new Error("Could not revoke this person's super admin access.");
+      throw toFriendlyError(error, "Could not revoke this person's super admin access.");
     }
 
     return { name: account.name };

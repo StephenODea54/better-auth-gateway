@@ -1,6 +1,5 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { createServerFn } from "@tanstack/react-start";
-import { getRequest } from "@tanstack/react-start/server";
 import { and, eq } from "drizzle-orm";
 import { z } from "zod";
 
@@ -8,9 +7,11 @@ import type { MutationConfig } from "@/lib/react-query.ts";
 
 import { db } from "@/db/clients/db-client.ts";
 import { member, organizationRole } from "@/db/schema/index.ts";
-import { auth } from "@/features/auth/clients/server-client.ts";
 import { roles } from "@/features/auth/lib/access-control.ts";
-import { setEvent, setEventError } from "@/lib/wide-event.ts";
+import { requireOrgPermission } from "@/features/auth/lib/guards.ts";
+import { splitRoles } from "@/features/auth/lib/super-admin.ts";
+import { toFriendlyError } from "@/lib/errors.ts";
+import { setEvent } from "@/lib/wide-event.ts";
 
 import { listRolesQueryOptions } from "./list-roles.ts";
 
@@ -24,17 +25,11 @@ export const deleteRole = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     setEvent({ "event.kind": "role.deleted", "organization.id": data.organizationId });
 
-    const { success } = await auth.api.hasPermission({
-      body: {
-        organizationId: data.organizationId,
-        permissions: { ac: ["delete"] },
-      },
-      headers: getRequest().headers,
-    });
-
-    if (!success) {
-      throw new Error("You do not have permission to change this application's roles.");
-    }
+    await requireOrgPermission(
+      data.organizationId,
+      { ac: ["delete"] },
+      "You do not have permission to change this application's roles.",
+    );
 
     if (data.role in roles) {
       throw new Error("Built-in roles are defined in code and cannot be deleted.");
@@ -45,10 +40,7 @@ export const deleteRole = createServerFn({ method: "POST" })
       .from(member)
       .where(eq(member.organizationId, data.organizationId));
 
-    const holders = members.filter(row => row.role
-      .split(",")
-      .map(value => value.trim())
-      .includes(data.role)).length;
+    const holders = members.filter(row => splitRoles(row.role).includes(data.role)).length;
 
     if (holders > 0) {
       throw new Error(
@@ -65,8 +57,7 @@ export const deleteRole = createServerFn({ method: "POST" })
         ));
     }
     catch (error) {
-      setEventError(error);
-      throw new Error("Could not delete this role.");
+      throw toFriendlyError(error, "Could not delete this role.");
     }
 
     return { role: data.role };

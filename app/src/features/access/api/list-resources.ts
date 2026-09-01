@@ -1,6 +1,5 @@
 import { queryOptions, useQuery } from "@tanstack/react-query";
 import { createServerFn } from "@tanstack/react-start";
-import { getRequest } from "@tanstack/react-start/server";
 import { and, eq } from "drizzle-orm";
 import { z } from "zod";
 
@@ -8,22 +7,17 @@ import type { ApiFnReturnType, QueryConfig } from "@/lib/react-query.ts";
 
 import { db } from "@/db/clients/db-client.ts";
 import { organizationRole } from "@/db/schema/index.ts";
-import { auth } from "@/features/auth/clients/server-client.ts";
+import { parsePermission } from "@/features/access/lib/permissions.ts";
+import { requireOrgPermission } from "@/features/auth/lib/guards.ts";
 
 export const listResources = createServerFn()
   .validator(z.object({ organizationId: z.string().min(1) }))
   .handler(async ({ data }) => {
-    const { success } = await auth.api.hasPermission({
-      body: {
-        organizationId: data.organizationId,
-        permissions: { ac: ["read"] },
-      },
-      headers: getRequest().headers,
-    });
-
-    if (!success) {
-      throw new Error("You do not have permission to view this application's resources.");
-    }
+    await requireOrgPermission(
+      data.organizationId,
+      { ac: ["read"] },
+      "You do not have permission to view this application's resources.",
+    );
 
     const [catalogRole] = await db
       .select({ permission: organizationRole.permission })
@@ -34,9 +28,7 @@ export const listResources = createServerFn()
       ))
       .limit(1);
 
-    const catalog = catalogRole
-      ? JSON.parse(catalogRole.permission) as Record<string, string[]>
-      : {};
+    const catalog = catalogRole ? parsePermission(catalogRole.permission) : {};
 
     return Object.entries(catalog)
       .map(([key, actions]) => ({ actions: [...actions].sort(), key }))

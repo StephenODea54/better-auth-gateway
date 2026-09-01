@@ -1,13 +1,13 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { createServerFn } from "@tanstack/react-start";
 import { getRequest } from "@tanstack/react-start/server";
-import { APIError } from "better-auth/api";
 import { z } from "zod";
 
 import type { MutationConfig } from "@/lib/react-query.ts";
 
 import { auth } from "@/features/auth/clients/server-client.ts";
-import { setEvent, setEventError } from "@/lib/wide-event.ts";
+import { toFriendlyError } from "@/lib/errors.ts";
+import { setEvent } from "@/lib/wide-event.ts";
 
 import { listMembersQueryOptions } from "./list-members.ts";
 
@@ -36,13 +36,7 @@ export const updateMemberRoles = createServerFn({ method: "POST" })
       });
     }
     catch (error) {
-      setEventError(error);
-
-      if (error instanceof APIError) {
-        throw new Error(error.message);
-      }
-
-      throw new Error("Could not change this member's roles.");
+      throw toFriendlyError(error, "Could not change this member's roles.");
     }
 
     return { name: data.name, roles: data.roles };

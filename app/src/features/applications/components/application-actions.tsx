@@ -10,8 +10,8 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu.tsx";
+import { ApplicationSheet } from "@/features/applications/components/application-sheet.tsx";
 import { DeleteApplicationDialog } from "@/features/applications/components/delete-application-dialog.tsx";
-import { EditApplicationSheet } from "@/features/applications/components/edit-application-sheet.tsx";
 
 interface ApplicationActionsProps {
   application: Application;
@@ -44,18 +44,20 @@ export function ApplicationActions({ application }: ApplicationActionsProps) {
       </DropdownMenu>
 
       {isEditing && (
-        <EditApplicationSheet
+        <ApplicationSheet
           application={application}
           onOpenChange={setIsEditing}
           open={isEditing}
         />
       )}
 
-      <DeleteApplicationDialog
-        application={application}
-        onOpenChange={setIsDeleting}
-        open={isDeleting}
-      />
+      {isDeleting && (
+        <DeleteApplicationDialog
+          application={application}
+          onOpenChange={setIsDeleting}
+          open={isDeleting}
+        />
+      )}
     </>
   );
 }

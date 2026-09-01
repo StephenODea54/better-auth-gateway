@@ -80,6 +80,13 @@ export async function listSuperAdminUserIds() {
   return rows.map(row => row.id);
 }
 
+export function splitRoles(roles: null | string | undefined) {
+  return (roles ?? "")
+    .split(",")
+    .map(role => role.trim())
+    .filter(role => role.length > 0);
+}
+
 export async function syncSuperAdminMemberships(userId: string) {
   const [account] = await db
     .select({ id: user.id, role: user.role })
@@ -197,11 +204,4 @@ function revokedRoles(roles: string) {
   return splitRoles(roles).filter(role =>
     role !== OWNER_ROLE && role !== SUPER_ADMIN_MEMBER_MARKER,
   );
-}
-
-function splitRoles(roles: null | string | undefined) {
-  return (roles ?? "")
-    .split(",")
-    .map(role => role.trim())
-    .filter(role => role.length > 0);
 }

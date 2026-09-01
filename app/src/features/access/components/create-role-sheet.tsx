@@ -1,17 +1,8 @@
 import { useForm } from "@tanstack/react-form";
-import { Loader2Icon } from "lucide-react";
 import { toast } from "sonner";
-import { z } from "zod";
 
-import { Button } from "@/components/ui/button.tsx";
-import {
-  Field,
-  FieldDescription,
-  FieldError,
-  FieldGroup,
-  FieldLabel,
-} from "@/components/ui/field.tsx";
-import { Input } from "@/components/ui/input.tsx";
+import { FieldGroup } from "@/components/ui/field.tsx";
+import { LoadingButton } from "@/components/ui/loading-button.tsx";
 import {
   Sheet,
   SheetContent,
@@ -19,14 +10,8 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet.tsx";
-import { useCreateRole } from "@/features/access/api/create-role.ts";
-
-const createRoleFormSchema = z.object({
-  role: z
-    .string()
-    .min(1, "Required")
-    .regex(/^[a-z0-9][a-z0-9_-]*$/, "Use lowercase letters, numbers, hyphens and underscores."),
-});
+import { TextField } from "@/components/ui/text-field.tsx";
+import { createRoleInputSchema, useCreateRole } from "@/features/access/api/create-role.ts";
 
 interface CreateRoleSheetProps {
   onCreated: (role: string) => void;
@@ -65,7 +50,7 @@ export function CreateRoleSheet({ onCreated, onOpenChange, open, organizationId 
       onOpenChange(false);
       formApi.reset();
     },
-    validators: { onSubmit: createRoleFormSchema },
+    validators: { onSubmit: createRoleInputSchema.omit({ organizationId: true }) },
   });
 
   return (
@@ -85,45 +70,27 @@ export function CreateRoleSheet({ onCreated, onOpenChange, open, organizationId 
         >
           <FieldGroup className="px-4">
             <form.Field name="role">
-              {(field) => {
-                const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid;
-
-                return (
-                  <Field data-invalid={isInvalid}>
-                    <FieldLabel htmlFor={field.name}>Role</FieldLabel>
-                    <Input
-                      aria-invalid={isInvalid}
-                      autoComplete="off"
-                      id={field.name}
-                      name={field.name}
-                      onBlur={field.handleBlur}
-                      onChange={event => field.handleChange(event.target.value)}
-                      placeholder="analyst"
-                      value={field.state.value}
-                    />
-                    <FieldDescription>
-                      The name members are assigned. It starts with nothing granted — pick its
-                      permissions once it is created.
-                    </FieldDescription>
-                    {isInvalid && <FieldError errors={field.state.meta.errors} />}
-                  </Field>
-                );
-              }}
+              {field => (
+                <TextField
+                  description="The name members are assigned. It starts with nothing granted; pick its permissions once it is created."
+                  field={field}
+                  label="Role"
+                  placeholder="analyst"
+                />
+              )}
             </form.Field>
           </FieldGroup>
         </form>
 
         <SheetFooter>
-          <Button disabled={createRole.isPending} form="create-role" type="submit">
-            {createRole.isPending
-              ? (
-                  <>
-                    <Loader2Icon className="animate-spin" />
-                    Creating…
-                  </>
-                )
-              : "Create role"}
-          </Button>
+          <LoadingButton
+            form="create-role"
+            isPending={createRole.isPending}
+            pendingLabel="Creating…"
+            type="submit"
+          >
+            Create role
+          </LoadingButton>
         </SheetFooter>
       </SheetContent>
     </Sheet>

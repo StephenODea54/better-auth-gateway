@@ -1,17 +1,19 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { createServerFn } from "@tanstack/react-start";
 import { getRequest } from "@tanstack/react-start/server";
-import { APIError } from "better-auth/api";
 import { eq } from "drizzle-orm";
 import { z } from "zod";
 
+import type { UserRole } from "@/features/auth/lib/guards.ts";
 import type { MutationConfig } from "@/lib/react-query.ts";
 
 import { db } from "@/db/clients/db-client.ts";
 import { user } from "@/db/schema/index.ts";
 import { auth } from "@/features/auth/clients/server-client.ts";
+import { requireSuperAdmin } from "@/features/auth/lib/guards.ts";
 import { isSuperAdmin, withSuperAdminRole } from "@/features/auth/lib/super-admin.ts";
-import { setEvent, setEventError } from "@/lib/wide-event.ts";
+import { toFriendlyError } from "@/lib/errors.ts";
+import { setEvent } from "@/lib/wide-event.ts";
 
 import { listSuperAdminsQueryOptions } from "./list-super-admins.ts";
 
@@ -30,14 +32,9 @@ export const grantSuperAdmin = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     setEvent({ "event.kind": "super_admin.granted" });
 
-    type UserRole = NonNullable<Parameters<typeof auth.api.setRole>[0]>["body"]["role"];
-
     const { headers } = getRequest();
-    const session = await auth.api.getSession({ headers });
 
-    if (!session || !isSuperAdmin(session.user.role)) {
-      throw new Error("Only gateway super admins can promote other super admins.");
-    }
+    await requireSuperAdmin("Only gateway super admins can promote other super admins.");
 
     const [account] = await db
       .select({ id: user.id, name: user.name, role: user.role })
@@ -60,13 +57,7 @@ export const grantSuperAdmin = createServerFn({ method: "POST" })
       });
     }
     catch (error) {
-      setEventError(error);
-
-      if (error instanceof APIError) {
-        throw new Error(error.message);
-      }
-
-      throw new Error("Could not promote this person to super admin.");
+      throw toFriendlyError(error, "Could not promote this person to super admin.");
     }
 
     return { email: data.email, name: account.name };

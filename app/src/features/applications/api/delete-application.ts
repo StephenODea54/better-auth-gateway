@@ -9,7 +9,9 @@ import type { MutationConfig } from "@/lib/react-query.ts";
 import { db } from "@/db/clients/db-client.ts";
 import { ssoProvider } from "@/db/schema/index.ts";
 import { auth } from "@/features/auth/clients/server-client.ts";
-import { setEvent, setEventError } from "@/lib/wide-event.ts";
+import { requireOrgPermission } from "@/features/auth/lib/guards.ts";
+import { toFriendlyError } from "@/lib/errors.ts";
+import { setEvent } from "@/lib/wide-event.ts";
 
 import { listApplicationsQueryOptions } from "./list-applications.ts";
 
@@ -23,6 +25,8 @@ export const deleteApplication = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     setEvent({ "event.kind": "application.deleted", "organization.id": data.id });
 
+    await requireOrgPermission(data.id, { organization: ["delete"] }, "You do not have permission to delete this application.");
+
     const headers = getRequest().headers;
 
     const [provider] = await db
@@ -35,18 +39,6 @@ export const deleteApplication = createServerFn({ method: "POST" })
       throw new Error("Could not find this application's identity provider.");
     }
 
-    const { success } = await auth.api.hasPermission({
-      body: {
-        organizationId: data.id,
-        permissions: { organization: ["delete"] },
-      },
-      headers,
-    });
-
-    if (!success) {
-      throw new Error("You do not have permission to delete this application.");
-    }
-
     try {
       await auth.api.deleteSSOProvider({
         body: { providerId: provider.providerId },
@@ -54,8 +46,7 @@ export const deleteApplication = createServerFn({ method: "POST" })
       });
     }
     catch (error) {
-      setEventError(error);
-      throw new Error("Could not disconnect this application's identity provider.");
+      throw toFriendlyError(error, "Could not disconnect this application's identity provider.");
     }
 
     try {
@@ -65,8 +56,7 @@ export const deleteApplication = createServerFn({ method: "POST" })
       });
     }
     catch (error) {
-      setEventError(error);
-      throw new Error("The identity provider was disconnected, but the application could not be deleted.");
+      throw toFriendlyError(error, "The identity provider was disconnected, but the application could not be deleted.");
     }
 
     return { id: data.id, name: data.name };

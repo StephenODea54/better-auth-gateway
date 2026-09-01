@@ -1,19 +1,11 @@
-import { Loader2Icon, RefreshCwIcon, TriangleAlertIcon } from "lucide-react";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 
 import type { Member } from "@/features/members/api/list-members.ts";
 
-import { Button } from "@/components/ui/button.tsx";
-import {
-  Empty,
-  EmptyContent,
-  EmptyDescription,
-  EmptyHeader,
-  EmptyMedia,
-  EmptyTitle,
-} from "@/components/ui/empty.tsx";
 import { Field, FieldDescription, FieldLabel } from "@/components/ui/field.tsx";
+import { LoadError } from "@/components/ui/load-error.tsx";
+import { LoadingButton } from "@/components/ui/loading-button.tsx";
 import {
   Sheet,
   SheetContent,
@@ -23,9 +15,9 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet.tsx";
 import { Skeleton } from "@/components/ui/skeleton.tsx";
-import { Switch } from "@/components/ui/switch.tsx";
 import { useRoles } from "@/features/access/api/list-roles.ts";
 import { useUpdateMemberRoles } from "@/features/members/api/update-member-roles.ts";
+import { RoleSwitchList } from "@/features/members/components/role-switch-list.tsx";
 
 interface MemberRolesSheetProps {
   member: Member;
@@ -89,41 +81,17 @@ export function MemberRolesSheet({ member, onOpenChange, open, organizationId }:
           )}
 
           {rolesQuery.isError && (
-            <Empty className="rounded-xl border">
-              <EmptyHeader>
-                <EmptyMedia variant="icon">
-                  <TriangleAlertIcon />
-                </EmptyMedia>
-                <EmptyTitle>Could not load roles</EmptyTitle>
-                <EmptyDescription>{rolesQuery.error.message}</EmptyDescription>
-              </EmptyHeader>
-              <EmptyContent>
-                <Button onClick={() => void rolesQuery.refetch()} variant="outline">
-                  <RefreshCwIcon />
-                  Try again
-                </Button>
-              </EmptyContent>
-            </Empty>
+            <LoadError
+              message={rolesQuery.error.message}
+              onRetry={() => void rolesQuery.refetch()}
+              title="Could not load roles"
+            />
           )}
 
           {rolesQuery.isSuccess && (
             <Field>
               <FieldLabel>Roles</FieldLabel>
-              <div className="overflow-hidden rounded-xl border">
-                {assignable.map(role => (
-                  <div
-                    className="flex items-center justify-between gap-4 border-b px-4 py-3 last:border-b-0"
-                    key={role}
-                  >
-                    <span className="truncate text-sm font-medium">{role}</span>
-                    <Switch
-                      aria-label={role}
-                      checked={held.has(role)}
-                      onCheckedChange={() => toggle(role)}
-                    />
-                  </div>
-                ))}
-              </div>
+              <RoleSwitchList held={held} onToggle={toggle} roles={assignable} />
               <FieldDescription>
                 A member holds every role switched on here, and every permission those roles grant.
                 Only an owner can grant or revoke owner.
@@ -138,21 +106,16 @@ export function MemberRolesSheet({ member, onOpenChange, open, organizationId }:
               ? "Pick at least one role"
               : `${changes === 0 ? "No" : changes} unsaved ${changes === 1 ? "change" : "changes"}`}
           </span>
-          <Button
-            disabled={changes === 0 || selected.length === 0 || updateMemberRoles.isPending}
+          <LoadingButton
+            disabled={changes === 0 || selected.length === 0}
+            isPending={updateMemberRoles.isPending}
             onClick={() => updateMemberRoles.mutate({
               data: { memberId: member.id, name: member.name, organizationId, roles: selected },
             })}
+            pendingLabel="Saving…"
           >
-            {updateMemberRoles.isPending
-              ? (
-                  <>
-                    <Loader2Icon className="animate-spin" />
-                    Saving…
-                  </>
-                )
-              : "Save roles"}
-          </Button>
+            Save roles
+          </LoadingButton>
         </SheetFooter>
       </SheetContent>
     </Sheet>

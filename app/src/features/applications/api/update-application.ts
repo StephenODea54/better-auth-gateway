@@ -9,8 +9,10 @@ import type { MutationConfig } from "@/lib/react-query.ts";
 import { db } from "@/db/clients/db-client.ts";
 import { ssoProvider } from "@/db/schema/index.ts";
 import { auth } from "@/features/auth/clients/server-client.ts";
+import { requireOrgPermission } from "@/features/auth/lib/guards.ts";
 import { buildSamlMapping } from "@/features/auth/lib/saml-mapping.ts";
-import { setEvent, setEventError } from "@/lib/wide-event.ts";
+import { toFriendlyError } from "@/lib/errors.ts";
+import { setEvent } from "@/lib/wide-event.ts";
 
 import { listApplicationsQueryOptions } from "./list-applications.ts";
 
@@ -34,6 +36,8 @@ export const updateApplication = createServerFn({ method: "POST" })
   .validator(updateApplicationInputSchema)
   .handler(async ({ data }) => {
     setEvent({ "event.kind": "application.updated", "organization.id": data.id });
+
+    await requireOrgPermission(data.id, { organization: ["update"] }, "You do not have permission to update this application.");
 
     const headers = getRequest().headers;
 
@@ -60,8 +64,7 @@ export const updateApplication = createServerFn({ method: "POST" })
       });
     }
     catch (error) {
-      setEventError(error);
-      throw new Error("Could not update the application.");
+      throw toFriendlyError(error, "Could not update the application.");
     }
 
     try {
@@ -85,8 +88,7 @@ export const updateApplication = createServerFn({ method: "POST" })
       });
     }
     catch (error) {
-      setEventError(error);
-      throw new Error("Could not update this application's identity provider.");
+      throw toFriendlyError(error, "Could not update this application's identity provider.");
     }
 
     return { id: data.id, name: data.name };

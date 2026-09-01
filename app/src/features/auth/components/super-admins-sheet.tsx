@@ -1,44 +1,16 @@
 import { useForm } from "@tanstack/react-form";
-import {
-  Loader2Icon,
-  RefreshCwIcon,
-  ShieldCheckIcon,
-  TriangleAlertIcon,
-  UserMinusIcon,
-} from "lucide-react";
+import { ShieldCheckIcon, UserMinusIcon } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 
 import type { SuperAdmin } from "@/features/auth/api/list-super-admins.ts";
 
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog.tsx";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar.tsx";
 import { Button } from "@/components/ui/button.tsx";
-import {
-  Empty,
-  EmptyContent,
-  EmptyDescription,
-  EmptyHeader,
-  EmptyMedia,
-  EmptyTitle,
-} from "@/components/ui/empty.tsx";
-import {
-  Field,
-  FieldDescription,
-  FieldError,
-  FieldGroup,
-  FieldLabel,
-} from "@/components/ui/field.tsx";
-import { Input } from "@/components/ui/input.tsx";
+import { ConfirmActionDialog } from "@/components/ui/confirm-action-dialog.tsx";
+import { FieldGroup } from "@/components/ui/field.tsx";
+import { LoadError } from "@/components/ui/load-error.tsx";
+import { LoadingButton } from "@/components/ui/loading-button.tsx";
 import {
   Sheet,
   SheetContent,
@@ -49,6 +21,7 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet.tsx";
 import { Skeleton } from "@/components/ui/skeleton.tsx";
+import { TextField } from "@/components/ui/text-field.tsx";
 import { grantSuperAdminInputSchema, useGrantSuperAdmin } from "@/features/auth/api/grant-super-admin.ts";
 import { useSuperAdmins } from "@/features/auth/api/list-super-admins.ts";
 import { useRevokeSuperAdmin } from "@/features/auth/api/revoke-super-admin.ts";
@@ -142,30 +115,15 @@ export function SuperAdminsSheet({ currentUserId }: SuperAdminsSheetProps) {
             >
               <FieldGroup className="px-4">
                 <form.Field name="email">
-                  {(field) => {
-                    const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid;
-
-                    return (
-                      <Field data-invalid={isInvalid}>
-                        <FieldLabel htmlFor={field.name}>Email</FieldLabel>
-                        <Input
-                          aria-invalid={isInvalid}
-                          autoComplete="off"
-                          id={field.name}
-                          name={field.name}
-                          onBlur={field.handleBlur}
-                          onChange={event => field.handleChange(event.target.value)}
-                          placeholder="ada@acme.com"
-                          type="email"
-                          value={field.state.value}
-                        />
-                        <FieldDescription>
-                          They have to have signed in to the gateway at least once.
-                        </FieldDescription>
-                        {isInvalid && <FieldError errors={field.state.meta.errors} />}
-                      </Field>
-                    );
-                  }}
+                  {field => (
+                    <TextField
+                      description="They have to have signed in to the gateway at least once."
+                      field={field}
+                      label="Email"
+                      placeholder="ada@acme.com"
+                      type="email"
+                    />
+                  )}
                 </form.Field>
               </FieldGroup>
             </form>
@@ -181,21 +139,11 @@ export function SuperAdminsSheet({ currentUserId }: SuperAdminsSheetProps) {
               )}
 
               {superAdminsQuery.isError && (
-                <Empty className="rounded-xl border">
-                  <EmptyHeader>
-                    <EmptyMedia variant="icon">
-                      <TriangleAlertIcon />
-                    </EmptyMedia>
-                    <EmptyTitle>Could not load super admins</EmptyTitle>
-                    <EmptyDescription>{superAdminsQuery.error.message}</EmptyDescription>
-                  </EmptyHeader>
-                  <EmptyContent>
-                    <Button onClick={() => void superAdminsQuery.refetch()} variant="outline">
-                      <RefreshCwIcon />
-                      Try again
-                    </Button>
-                  </EmptyContent>
-                </Empty>
+                <LoadError
+                  message={superAdminsQuery.error.message}
+                  onRetry={() => void superAdminsQuery.refetch()}
+                  title="Could not load super admins"
+                />
               )}
 
               {superAdminsQuery.isSuccess && (
@@ -242,60 +190,32 @@ export function SuperAdminsSheet({ currentUserId }: SuperAdminsSheetProps) {
           </div>
 
           <SheetFooter>
-            <Button disabled={grantSuperAdmin.isPending} form="grant-super-admin" type="submit">
-              {grantSuperAdmin.isPending
-                ? (
-                    <>
-                      <Loader2Icon className="animate-spin" />
-                      Promoting…
-                    </>
-                  )
-                : "Promote to super admin"}
-            </Button>
+            <LoadingButton
+              form="grant-super-admin"
+              isPending={grantSuperAdmin.isPending}
+              pendingLabel="Promoting…"
+              type="submit"
+            >
+              Promote to super admin
+            </LoadingButton>
           </SheetFooter>
         </SheetContent>
       </Sheet>
 
-      <AlertDialog onOpenChange={open => !open && setRevoking(null)} open={Boolean(revoking)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>
-              Revoke
-              {" "}
-              {revoking?.name}
-              ?
-            </AlertDialogTitle>
-            <AlertDialogDescription>
-              This drops their owner access in every application. They keep signing in, but
-              only reach applications they were added to on their own.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-
-          <AlertDialogFooter>
-            <AlertDialogCancel disabled={revokeSuperAdmin.isPending}>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              disabled={revokeSuperAdmin.isPending}
-              onClick={(event) => {
-                event.preventDefault();
-
-                if (revoking) {
-                  revokeSuperAdmin.mutate({ data: { userId: revoking.id } });
-                }
-              }}
-              variant="destructive"
-            >
-              {revokeSuperAdmin.isPending
-                ? (
-                    <>
-                      <Loader2Icon className="animate-spin" />
-                      Revoking…
-                    </>
-                  )
-                : "Revoke super admin"}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      <ConfirmActionDialog
+        confirmLabel="Revoke super admin"
+        description="This drops their owner access in every application. They keep signing in, but only reach applications they were added to on their own."
+        isPending={revokeSuperAdmin.isPending}
+        onConfirm={() => {
+          if (revoking) {
+            revokeSuperAdmin.mutate({ data: { userId: revoking.id } });
+          }
+        }}
+        onOpenChange={open => !open && setRevoking(null)}
+        open={Boolean(revoking)}
+        pendingLabel="Revoking…"
+        title={`Revoke ${revoking?.name}?`}
+      />
     </>
   );
 }

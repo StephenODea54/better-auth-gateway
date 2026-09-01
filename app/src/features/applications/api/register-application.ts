@@ -8,9 +8,10 @@ import type { MutationConfig } from "@/lib/react-query.ts";
 import { env } from "@/config/env.ts";
 import { slugify } from "@/features/applications/lib/slugify.ts";
 import { auth } from "@/features/auth/clients/server-client.ts";
+import { requireSuperAdmin } from "@/features/auth/lib/guards.ts";
 import { buildSamlMapping } from "@/features/auth/lib/saml-mapping.ts";
-import { isSuperAdmin } from "@/features/auth/lib/super-admin.ts";
-import { setEvent, setEventError } from "@/lib/wide-event.ts";
+import { toFriendlyError } from "@/lib/errors.ts";
+import { setEvent } from "@/lib/wide-event.ts";
 
 import { listApplicationsQueryOptions } from "./list-applications.ts";
 
@@ -36,11 +37,8 @@ export const registerApplication = createServerFn({ method: "POST" })
   .validator(registerApplicationInputSchema)
   .handler(async ({ data }) => {
     const headers = getRequest().headers;
-    const session = await auth.api.getSession({ headers });
 
-    if (!session || !isSuperAdmin(session.user.role)) {
-      throw new Error("Only a gateway super admin can register an application.");
-    }
+    await requireSuperAdmin("Only a gateway super admin can register an application.");
 
     const slug = slugify(data.name);
 
@@ -58,8 +56,7 @@ export const registerApplication = createServerFn({ method: "POST" })
       });
     }
     catch (error) {
-      setEventError(error);
-      throw new Error("Could not create the application.");
+      throw toFriendlyError(error, "Could not create the application.");
     }
 
     if (!application) {
@@ -98,8 +95,7 @@ export const registerApplication = createServerFn({ method: "POST" })
         headers,
       });
 
-      setEventError(error);
-      throw new Error("Could not connect this application's identity provider. Try a different name.");
+      throw toFriendlyError(error, "Could not connect this application's identity provider. Try a different name.");
     }
 
     return { id: application.id, name: application.name, slug: application.slug };

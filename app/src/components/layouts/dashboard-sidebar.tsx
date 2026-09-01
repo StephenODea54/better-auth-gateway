@@ -63,6 +63,7 @@ const dashboardNavigation: DashboardNavigationSection[] = [
 
 export function DashboardSidebar() {
   const { pathname } = useLocation();
+  const { appName } = useLoaderData({ from: "__root__" });
   const { session } = useLoaderData({ from: "/dashboard" });
 
   return (
@@ -75,7 +76,7 @@ export function DashboardSidebar() {
                 <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
                   <ShieldCheckIcon className="size-4" />
                 </div>
-                <span className="truncate font-semibold">Auth Gateway</span>
+                <span className="truncate font-semibold">{appName}</span>
               </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>
