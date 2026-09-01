@@ -1,6 +1,8 @@
-import { useRouter } from "@tanstack/react-router";
 import { ChevronsUpDownIcon, LogOutIcon, SunMoonIcon } from "lucide-react";
 import { useTheme } from "next-themes";
+import { toast } from "sonner";
+
+import type { authClient } from "@/features/auth/clients/web-client.ts";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar.tsx";
 import {
@@ -17,23 +19,26 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu.tsx";
 import { SidebarMenuButton, useSidebar } from "@/components/ui/sidebar.tsx";
-import { authClient } from "@/features/auth/clients/web-client.ts";
+import { useSignOut } from "@/features/auth/api/sign-out.ts";
 
 export function UserMenu({
   user,
 }: {
   user: typeof authClient.$Infer.Session.user;
 }) {
-  const router = useRouter();
   const { isMobile } = useSidebar();
   const { setTheme, theme } = useTheme();
 
-  const { email, image, name } = user;
+  const signOut = useSignOut({
+    mutationConfig: {
+      onError: (error) => {
+        console.error(error);
+        toast.error(error.message);
+      },
+    },
+  });
 
-  async function signOut() {
-    await authClient.signOut();
-    await router.invalidate();
-  }
+  const { email, image, name } = user;
 
   return (
     <DropdownMenu>
@@ -93,7 +98,7 @@ export function UserMenu({
 
         <DropdownMenuSeparator />
 
-        <DropdownMenuItem onSelect={() => void signOut()}>
+        <DropdownMenuItem disabled={signOut.isPending} onSelect={() => signOut.mutate()}>
           <LogOutIcon />
           Log out
         </DropdownMenuItem>

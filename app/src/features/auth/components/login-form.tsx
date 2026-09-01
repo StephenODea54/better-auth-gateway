@@ -1,5 +1,4 @@
 import { Loader2Icon } from "lucide-react";
-import { useState } from "react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button.tsx";
@@ -10,25 +9,19 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card.tsx";
-import { authClient } from "@/features/auth/clients/web-client.ts";
+import { useSignIn } from "@/features/auth/api/sign-in.ts";
 
 export function LoginForm() {
-  const [isRedirecting, setIsRedirecting] = useState(false);
+  const signIn = useSignIn({
+    mutationConfig: {
+      onError: (error) => {
+        console.error(error);
+        toast.error(error.message);
+      },
+    },
+  });
 
-  async function signIn() {
-    setIsRedirecting(true);
-
-    const { error } = await authClient.signIn.sso({
-      callbackURL: "/dashboard",
-      providerId: "okta",
-      providerType: "saml",
-    });
-
-    if (error) {
-      setIsRedirecting(false);
-      toast.error(error.message ?? "Unable to reach Okta. Please try again.");
-    }
-  }
+  const isRedirecting = signIn.isPending || signIn.isSuccess;
 
   return (
     <Card className="w-full max-w-sm">
@@ -43,7 +36,7 @@ export function LoginForm() {
         <Button
           className="w-full"
           disabled={isRedirecting}
-          onClick={() => void signIn()}
+          onClick={() => signIn.mutate()}
           type="button"
         >
           {isRedirecting
