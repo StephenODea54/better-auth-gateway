@@ -56,13 +56,14 @@ export const auth = betterAuth({
   hooks: {
     after: createAuthMiddleware(async (ctx) => {
       const returned = ctx.context.returned as Record<string, any> | undefined;
+      const session = (ctx.context.session ?? returned) as Record<string, any> | undefined;
 
-      if (ctx.path === "/get-session" && returned?.user) {
+      if (session?.user) {
         setEvent({
-          "session.id": returned.session?.id,
-          "user.email": returned.user.email,
-          "user.id": returned.user.id,
-          "user.role": returned.user.role,
+          "session.id": session.session?.id,
+          "user.email": session.user.email,
+          "user.id": session.user.id,
+          "user.role": session.user.role,
         });
       }
 
