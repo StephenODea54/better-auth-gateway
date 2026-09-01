@@ -1,12 +1,20 @@
 import { sso } from "@better-auth/sso";
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
-import { organization } from "better-auth/plugins";
+import { createAuthMiddleware } from "better-auth/api";
+import { admin, organization } from "better-auth/plugins";
 import { tanstackStartCookies } from "better-auth/tanstack-start";
 
 import { env } from "@/config/env.ts";
 import { db } from "@/db/clients/db-client.ts";
 import { ac, roles } from "@/features/auth/lib/access-control.ts";
+import {
+  enrollSuperAdmins,
+  isFirstUser,
+  isSuperAdmin,
+  SUPER_ADMIN_ROLE,
+  syncSuperAdminMemberships,
+} from "@/features/auth/lib/super-admin.ts";
 
 const SSO_PROVIDER_ID = "okta";
 
@@ -15,14 +23,60 @@ export const auth = betterAuth({
   database: drizzleAdapter(db, {
     provider: "pg",
   }),
+  databaseHooks: {
+    session: {
+      create: {
+        after: async (session) => {
+          try {
+            await syncSuperAdminMemberships(session.userId);
+          }
+          catch (error) {
+            console.error(error);
+          }
+        },
+      },
+    },
+    user: {
+      create: {
+        before: async () => {
+          if (!await isFirstUser()) {
+            return;
+          }
+
+          return { data: { role: SUPER_ADMIN_ROLE } };
+        },
+      },
+    },
+  },
   emailAndPassword: {
     enabled: false,
   },
+  hooks: {
+    after: createAuthMiddleware(async (ctx) => {
+      if (ctx.path !== "/admin/set-role") {
+        return;
+      }
+
+      await syncSuperAdminMemberships(ctx.body.userId);
+    }),
+  },
   plugins: [
+    admin(),
     organization({
       ac,
+      allowUserToCreateOrganization: user => isSuperAdmin(user.role),
       creatorRole: "owner",
       dynamicAccessControl: { enabled: true },
+      organizationHooks: {
+        afterCreateOrganization: async ({ organization }) => {
+          try {
+            await enrollSuperAdmins(organization.id);
+          }
+          catch (error) {
+            console.error(error);
+          }
+        },
+      },
       roles,
       schema: {
         organization: {

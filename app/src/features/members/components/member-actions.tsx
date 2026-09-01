@@ -22,6 +22,10 @@ export function MemberActions({ member, organizationId }: MemberActionsProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [isRemoving, setIsRemoving] = useState(false);
 
+  if (member.isSuperAdmin) {
+    return null;
+  }
+
   return (
     <>
       <DropdownMenu>

@@ -7,6 +7,7 @@ import { z } from "zod";
 import type { MutationConfig } from "@/lib/react-query.ts";
 
 import { auth } from "@/features/auth/clients/server-client.ts";
+import { isSuperAdminMembership } from "@/features/auth/lib/super-admin.ts";
 
 import { listMembersQueryOptions } from "./list-members.ts";
 
@@ -19,6 +20,10 @@ export const removeMemberInputSchema = z.object({
 export const removeMember = createServerFn({ method: "POST" })
   .validator(removeMemberInputSchema)
   .handler(async ({ data }) => {
+    if (await isSuperAdminMembership(data.memberId)) {
+      throw new Error("This person is a gateway super admin. Their access is managed from the gateway, not from this application.");
+    }
+
     try {
       await auth.api.removeMember({
         body: {

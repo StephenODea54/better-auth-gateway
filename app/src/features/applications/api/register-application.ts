@@ -8,6 +8,7 @@ import type { MutationConfig } from "@/lib/react-query.ts";
 import { env } from "@/config/env.ts";
 import { slugify } from "@/features/applications/lib/slugify.ts";
 import { auth } from "@/features/auth/clients/server-client.ts";
+import { isSuperAdmin } from "@/features/auth/lib/super-admin.ts";
 
 import { listApplicationsQueryOptions } from "./list-applications.ts";
 
@@ -29,6 +30,12 @@ export const registerApplication = createServerFn({ method: "POST" })
   .validator(registerApplicationInputSchema)
   .handler(async ({ data }) => {
     const headers = getRequest().headers;
+    const session = await auth.api.getSession({ headers });
+
+    if (!session || !isSuperAdmin(session.user.role)) {
+      throw new Error("Only a gateway super admin can register an application.");
+    }
+
     const slug = slugify(data.name);
 
     let application;

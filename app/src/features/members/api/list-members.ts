@@ -7,27 +7,43 @@ import { z } from "zod";
 import type { ApiFnReturnType, QueryConfig } from "@/lib/react-query.ts";
 
 import { auth } from "@/features/auth/clients/server-client.ts";
+import {
+  isSuperAdmin,
+  listSuperAdminMemberIds,
+  SUPER_ADMIN_MEMBER_MARKER,
+} from "@/features/auth/lib/super-admin.ts";
 
 export const listMembers = createServerFn()
   .validator(z.object({ organizationId: z.string().min(1) }))
   .handler(async ({ data }) => {
+    const { headers } = getRequest();
+
     try {
-      const { members } = await auth.api.listMembers({
-        headers: getRequest().headers,
-        query: { organizationId: data.organizationId },
-      });
+      const session = await auth.api.getSession({ headers });
+
+      const [{ members }, superAdminIds] = await Promise.all([
+        auth.api.listMembers({
+          headers,
+          query: { organizationId: data.organizationId },
+        }),
+        listSuperAdminMemberIds(data.organizationId),
+      ]);
+
+      const viewerIsSuperAdmin = isSuperAdmin(session?.user.role);
 
       return members
+        .filter(member => viewerIsSuperAdmin || !superAdminIds.has(member.userId))
         .map(member => ({
           createdAt: member.createdAt,
           email: member.user.email,
           id: member.id,
           image: member.user.image ?? null,
+          isSuperAdmin: superAdminIds.has(member.userId),
           name: member.user.name,
           roles: member.role
             .split(",")
             .map(role => role.trim())
-            .filter(Boolean)
+            .filter(role => role.length > 0 && role !== SUPER_ADMIN_MEMBER_MARKER)
             .sort(),
           userId: member.userId,
         }))

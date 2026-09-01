@@ -81,6 +81,11 @@ export function MembersTable({ organizationId }: MembersTableProps) {
     columnHelper.accessor("roles", {
       cell: info => (
         <div className="flex flex-wrap gap-1">
+          {info.row.original.isSuperAdmin && (
+            <span className="rounded-md border border-primary/30 bg-primary/10 px-1.5 py-0.5 font-mono text-xs text-primary">
+              super admin
+            </span>
+          )}
           {info.getValue().map(role => (
             <span
               className="rounded-md border bg-muted px-1.5 py-0.5 font-mono text-xs text-muted-foreground"

@@ -10,6 +10,7 @@ import { db } from "@/db/clients/db-client.ts";
 import { organizationRole } from "@/db/schema/index.ts";
 import { auth } from "@/features/auth/clients/server-client.ts";
 import { roles } from "@/features/auth/lib/access-control.ts";
+import { SUPER_ADMIN_MEMBER_MARKER } from "@/features/auth/lib/super-admin.ts";
 
 import { listRolesQueryOptions } from "./list-roles.ts";
 
@@ -38,7 +39,7 @@ export const createRole = createServerFn({ method: "POST" })
       throw new Error("You do not have permission to change this application's roles.");
     }
 
-    if (data.role in roles) {
+    if (data.role in roles || data.role === SUPER_ADMIN_MEMBER_MARKER) {
       throw new Error(`${data.role} is a built-in role name.`);
     }
 

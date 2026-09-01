@@ -7,6 +7,10 @@ import { z } from "zod";
 import type { MutationConfig } from "@/lib/react-query.ts";
 
 import { auth } from "@/features/auth/clients/server-client.ts";
+import {
+  isSuperAdminMembership,
+  SUPER_ADMIN_MEMBER_MARKER,
+} from "@/features/auth/lib/super-admin.ts";
 
 import { listMembersQueryOptions } from "./list-members.ts";
 
@@ -22,6 +26,14 @@ export type UpdateMemberRolesInput = z.infer<typeof updateMemberRolesInputSchema
 export const updateMemberRoles = createServerFn({ method: "POST" })
   .validator(updateMemberRolesInputSchema)
   .handler(async ({ data }) => {
+    if (data.roles.includes(SUPER_ADMIN_MEMBER_MARKER)) {
+      throw new Error(`${SUPER_ADMIN_MEMBER_MARKER} is reserved for gateway super admins.`);
+    }
+
+    if (await isSuperAdminMembership(data.memberId)) {
+      throw new Error("This person is a gateway super admin. Their roles are managed from the gateway, not from this application.");
+    }
+
     try {
       await auth.api.updateMemberRole({
         body: {
