@@ -2,7 +2,7 @@ import { sso } from "@better-auth/sso";
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { createAuthMiddleware } from "better-auth/api";
-import { admin, organization } from "better-auth/plugins";
+import { admin, jwt, organization } from "better-auth/plugins";
 import { tanstackStartCookies } from "better-auth/tanstack-start";
 
 import { env } from "@/config/env.ts";
@@ -48,6 +48,7 @@ export const auth = betterAuth({
       },
     },
   },
+  disabledPaths: ["/token"],
   emailAndPassword: {
     enabled: false,
   },
@@ -62,6 +63,12 @@ export const auth = betterAuth({
   },
   plugins: [
     admin(),
+    jwt({
+      jwt: {
+        expirationTime: env.TOKEN_LIFETIME,
+        issuer: env.BETTER_AUTH_URL,
+      },
+    }),
     organization({
       ac,
       allowUserToCreateOrganization: user => isSuperAdmin(user.role),

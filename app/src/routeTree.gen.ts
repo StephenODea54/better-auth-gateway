@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as DashboardRouteRouteImport } from './routes/dashboard/route'
+import { Route as ApiTokenRouteImport } from './routes/api/token'
 import { Route as DashboardIndexRouteImport } from './routes/dashboard/index'
 import { Route as DashboardApplicationsRouteImport } from './routes/dashboard/applications'
 import { Route as DashboardMembersRouteImport } from './routes/dashboard/members'
@@ -26,6 +27,11 @@ const IndexRoute = IndexRouteImport.update({
 const DashboardRouteRoute = DashboardRouteRouteImport.update({
   id: '/dashboard',
   path: '/dashboard',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiTokenRoute = ApiTokenRouteImport.update({
+  id: '/api/token',
+  path: '/api/token',
   getParentRoute: () => rootRouteImport,
 } as any)
 const DashboardIndexRoute = DashboardIndexRouteImport.update({
@@ -62,6 +68,7 @@ const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/dashboard': typeof DashboardRouteRouteWithChildren
+  '/api/token': typeof ApiTokenRoute
   '/dashboard/applications': typeof DashboardApplicationsRoute
   '/dashboard/members': typeof DashboardMembersRoute
   '/dashboard/permissions': typeof DashboardPermissionsRoute
@@ -71,6 +78,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/api/token': typeof ApiTokenRoute
   '/dashboard/applications': typeof DashboardApplicationsRoute
   '/dashboard/members': typeof DashboardMembersRoute
   '/dashboard/permissions': typeof DashboardPermissionsRoute
@@ -82,6 +90,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/dashboard': typeof DashboardRouteRouteWithChildren
+  '/api/token': typeof ApiTokenRoute
   '/dashboard/applications': typeof DashboardApplicationsRoute
   '/dashboard/members': typeof DashboardMembersRoute
   '/dashboard/permissions': typeof DashboardPermissionsRoute
@@ -94,6 +103,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/dashboard'
+    | '/api/token'
     | '/dashboard/applications'
     | '/dashboard/members'
     | '/dashboard/permissions'
@@ -103,6 +113,7 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/api/token'
     | '/dashboard/applications'
     | '/dashboard/members'
     | '/dashboard/permissions'
@@ -113,6 +124,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/dashboard'
+    | '/api/token'
     | '/dashboard/applications'
     | '/dashboard/members'
     | '/dashboard/permissions'
@@ -124,6 +136,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   DashboardRouteRoute: typeof DashboardRouteRouteWithChildren
+  ApiTokenRoute: typeof ApiTokenRoute
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
 }
 
@@ -141,6 +154,13 @@ declare module '@tanstack/react-router' {
       path: '/dashboard'
       fullPath: '/dashboard'
       preLoaderRoute: typeof DashboardRouteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/token': {
+      id: '/api/token'
+      path: '/api/token'
+      fullPath: '/api/token'
+      preLoaderRoute: typeof ApiTokenRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/dashboard/': {
@@ -211,6 +231,7 @@ const DashboardRouteRouteWithChildren = DashboardRouteRoute._addFileChildren(
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   DashboardRouteRoute: DashboardRouteRouteWithChildren,
+  ApiTokenRoute: ApiTokenRoute,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
 }
 export const routeTree = rootRouteImport

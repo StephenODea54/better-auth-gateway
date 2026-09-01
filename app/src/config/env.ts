@@ -26,5 +26,12 @@ export const env = createEnv({
     SSO_IDP_CERT: z.base64().transform(atob),
     SSO_IDP_ENTITY_ID: z.string().min(1),
     SSO_IDP_ENTRY_POINT: z.url(),
+    TOKEN_LIFETIME: z
+      .string()
+      .regex(
+        /^\d+\s*(?:[smhdw]|sec|secs|second|seconds|min|mins|minute|minutes|hr|hrs|hour|hours|day|days|week|weeks)$/,
+        "Use a time span such as 15m, 1h or 7d.",
+      )
+      .default("15m"),
   },
 });
