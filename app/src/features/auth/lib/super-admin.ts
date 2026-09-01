@@ -1,4 +1,4 @@
-import { and, eq, inArray, sql } from "drizzle-orm";
+import { and, eq, inArray, or, sql } from "drizzle-orm";
 
 import { db } from "@/db/clients/db-client.ts";
 import { member, organization, user } from "@/db/schema/index.ts";
@@ -7,12 +7,22 @@ export const SUPER_ADMIN_ROLE = "admin";
 
 export const SUPER_ADMIN_MEMBER_MARKER = "gateway-admin";
 
+const DEFAULT_ROLE = "user";
+
 const OWNER_ROLE = "owner";
 
 const markedMemberships = sql`${SUPER_ADMIN_MEMBER_MARKER} = any(string_to_array(${member.role}, ','))`;
 
+const superAdminAccounts = sql`${SUPER_ADMIN_ROLE} = any(string_to_array(coalesce(${user.role}, ''), ','))`;
+
 export async function enrollSuperAdmins(organizationId: string) {
   await grant([organizationId], await listSuperAdminUserIds());
+}
+
+export function includesSuperAdminMarker(role: unknown) {
+  const requested = Array.isArray(role) ? role : String(role ?? "").split(",");
+
+  return requested.map(name => String(name).trim()).includes(SUPER_ADMIN_MEMBER_MARKER);
 }
 
 export async function isFirstUser() {
@@ -25,14 +35,31 @@ export function isSuperAdmin(role: null | string | undefined) {
   return splitRoles(role).includes(SUPER_ADMIN_ROLE);
 }
 
-export async function isSuperAdminMembership(memberId: string) {
+export async function isSuperAdminMembership(memberIdOrEmail: string) {
   const [row] = await db
     .select({ id: member.id })
     .from(member)
-    .where(and(eq(member.id, memberId), markedMemberships))
+    .innerJoin(user, eq(member.userId, user.id))
+    .where(and(
+      markedMemberships,
+      or(eq(member.id, memberIdOrEmail), eq(user.email, memberIdOrEmail)),
+    ))
     .limit(1);
 
   return Boolean(row);
+}
+
+export async function listSuperAdminAccounts() {
+  return db
+    .select({
+      createdAt: user.createdAt,
+      email: user.email,
+      id: user.id,
+      image: user.image,
+      name: user.name,
+    })
+    .from(user)
+    .where(superAdminAccounts);
 }
 
 export async function listSuperAdminMemberIds(organizationId: string) {
@@ -48,7 +75,7 @@ export async function listSuperAdminUserIds() {
   const rows = await db
     .select({ id: user.id })
     .from(user)
-    .where(sql`${SUPER_ADMIN_ROLE} = any(string_to_array(coalesce(${user.role}, ''), ','))`);
+    .where(superAdminAccounts);
 
   return rows.map(row => row.id);
 }
@@ -72,6 +99,16 @@ export async function syncSuperAdminMemberships(userId: string) {
   const organizations = await db.select({ id: organization.id }).from(organization);
 
   await grant(organizations.map(row => row.id), [userId]);
+}
+
+export function withoutSuperAdminRole(role: null | string | undefined) {
+  const remaining = splitRoles(role).filter(name => name !== SUPER_ADMIN_ROLE);
+
+  return remaining.length > 0 ? remaining : [DEFAULT_ROLE];
+}
+
+export function withSuperAdminRole(role: null | string | undefined) {
+  return [...new Set([...splitRoles(role), SUPER_ADMIN_ROLE])];
 }
 
 async function grant(organizationIds: string[], userIds: string[]) {

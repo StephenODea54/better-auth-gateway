@@ -7,7 +7,6 @@ import { z } from "zod";
 import type { MutationConfig } from "@/lib/react-query.ts";
 
 import { auth } from "@/features/auth/clients/server-client.ts";
-import { isSuperAdminMembership } from "@/features/auth/lib/super-admin.ts";
 import { setEvent, setEventError } from "@/lib/wide-event.ts";
 
 import { listMembersQueryOptions } from "./list-members.ts";
@@ -22,10 +21,6 @@ export const removeMember = createServerFn({ method: "POST" })
   .validator(removeMemberInputSchema)
   .handler(async ({ data }) => {
     setEvent({ "event.kind": "member.removed", "organization.id": data.organizationId });
-
-    if (await isSuperAdminMembership(data.memberId)) {
-      throw new Error("This person is a gateway super admin. Their access is managed from the gateway, not from this application.");
-    }
 
     try {
       await auth.api.removeMember({

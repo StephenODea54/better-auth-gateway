@@ -1,7 +1,7 @@
 import { sso } from "@better-auth/sso";
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
-import { createAuthMiddleware } from "better-auth/api";
+import { APIError, createAuthMiddleware } from "better-auth/api";
 import { admin, jwt, organization } from "better-auth/plugins";
 import { tanstackStartCookies } from "better-auth/tanstack-start";
 
@@ -11,8 +11,11 @@ import { ac, roles } from "@/features/auth/lib/access-control.ts";
 import { buildSamlMapping } from "@/features/auth/lib/saml-mapping.ts";
 import {
   enrollSuperAdmins,
+  includesSuperAdminMarker,
   isFirstUser,
   isSuperAdmin,
+  isSuperAdminMembership,
+  SUPER_ADMIN_MEMBER_MARKER,
   SUPER_ADMIN_ROLE,
   syncSuperAdminMemberships,
 } from "@/features/auth/lib/super-admin.ts";
@@ -48,7 +51,7 @@ export const auth = betterAuth({
       },
     },
   },
-  disabledPaths: ["/token"],
+  disabledPaths: ["/organization/leave", "/token"],
   emailAndPassword: {
     enabled: false,
   },
@@ -79,6 +82,25 @@ export const auth = betterAuth({
       }
 
       await syncSuperAdminMemberships(ctx.body.userId);
+    }),
+    before: createAuthMiddleware(async (ctx) => {
+      if (includesSuperAdminMarker(ctx.body?.role)) {
+        throw new APIError("BAD_REQUEST", {
+          message: `${SUPER_ADMIN_MEMBER_MARKER} is reserved for gateway super admins.`,
+        });
+      }
+
+      const target = ctx.path === "/organization/remove-member"
+        ? ctx.body?.memberIdOrEmail
+        : ctx.path === "/organization/update-member-role"
+          ? ctx.body?.memberId
+          : undefined;
+
+      if (typeof target === "string" && await isSuperAdminMembership(target)) {
+        throw new APIError("FORBIDDEN", {
+          message: "This person is a gateway super admin. Their access is managed from the gateway, not from this application.",
+        });
+      }
     }),
   },
   plugins: [

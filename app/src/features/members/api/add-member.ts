@@ -10,7 +10,6 @@ import type { MutationConfig } from "@/lib/react-query.ts";
 import { db } from "@/db/clients/db-client.ts";
 import { user } from "@/db/schema/index.ts";
 import { auth } from "@/features/auth/clients/server-client.ts";
-import { SUPER_ADMIN_MEMBER_MARKER } from "@/features/auth/lib/super-admin.ts";
 import { setEvent, setEventError } from "@/lib/wide-event.ts";
 
 import { listMembersQueryOptions } from "./list-members.ts";
@@ -35,10 +34,6 @@ export const addMember = createServerFn({ method: "POST" })
     type MemberRole = NonNullable<Parameters<typeof auth.api.addMember>[0]>["body"]["role"];
 
     const { headers } = getRequest();
-
-    if (data.roles.includes(SUPER_ADMIN_MEMBER_MARKER)) {
-      throw new Error(`${SUPER_ADMIN_MEMBER_MARKER} is reserved for gateway super admins.`);
-    }
 
     const { success } = await auth.api.hasPermission({
       body: {

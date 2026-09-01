@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useLoaderData } from "@tanstack/react-router";
 import { AppWindowIcon, RefreshCwIcon, TriangleAlertIcon } from "lucide-react";
 import { useState } from "react";
 
@@ -20,6 +20,7 @@ import {
 } from "@/components/ui/select.tsx";
 import { Skeleton } from "@/components/ui/skeleton.tsx";
 import { useApplications } from "@/features/applications/api/list-applications.ts";
+import { SuperAdminsSheet } from "@/features/auth/components/super-admins-sheet.tsx";
 import { AddMemberSheet } from "@/features/members/components/add-member-sheet.tsx";
 import { MembersTable } from "@/features/members/components/members-table.tsx";
 
@@ -29,6 +30,7 @@ export const Route = createFileRoute("/dashboard/members")({
 });
 
 export function Members() {
+  const { session } = useLoaderData({ from: "/dashboard" });
   const { data: applications, error, isError, isPending, refetch } = useApplications();
   const [selectedId, setSelectedId] = useState("");
 
@@ -36,11 +38,14 @@ export function Members() {
 
   return (
     <div className="flex flex-1 flex-col gap-4">
-      <div className="space-y-1">
-        <h1 className="text-2xl font-semibold tracking-tight">Members</h1>
-        <p className="text-sm text-muted-foreground">
-          People who can sign in to an application, and the roles they hold there.
-        </p>
+      <div className="flex items-start justify-between gap-4">
+        <div className="space-y-1">
+          <h1 className="text-2xl font-semibold tracking-tight">Members</h1>
+          <p className="text-sm text-muted-foreground">
+            People who can sign in to an application, and the roles they hold there.
+          </p>
+        </div>
+        {session.isSuperAdmin && <SuperAdminsSheet currentUserId={session.user.id} />}
       </div>
 
       {isPending && <Skeleton className="h-9 w-64" />}
