@@ -1,7 +1,6 @@
 import { Link, useLoaderData, useLocation } from "@tanstack/react-router";
 import {
   AppWindowIcon,
-  KeyRoundIcon,
   LockKeyholeIcon,
   MailIcon,
   ShieldCheckIcon,
@@ -38,7 +37,6 @@ const dashboardNavigation: DashboardNavigationSection[] = [
   {
     items: [
       { icon: AppWindowIcon, title: "Applications", to: "/dashboard/applications" },
-      { icon: KeyRoundIcon, title: "SSO Providers", to: "/dashboard/sso-providers" },
     ],
     title: "Registry",
   },

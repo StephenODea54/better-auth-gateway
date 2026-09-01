@@ -17,7 +17,6 @@ import { Route as DashboardInvitationsRouteImport } from './routes/dashboard/inv
 import { Route as DashboardMembersRouteImport } from './routes/dashboard/members'
 import { Route as DashboardPermissionsRouteImport } from './routes/dashboard/permissions'
 import { Route as DashboardRolesRouteImport } from './routes/dashboard/roles'
-import { Route as DashboardSsoProvidersRouteImport } from './routes/dashboard/sso-providers'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
 
 const IndexRoute = IndexRouteImport.update({
@@ -60,11 +59,6 @@ const DashboardRolesRoute = DashboardRolesRouteImport.update({
   path: '/roles',
   getParentRoute: () => DashboardRouteRoute,
 } as any)
-const DashboardSsoProvidersRoute = DashboardSsoProvidersRouteImport.update({
-  id: '/sso-providers',
-  path: '/sso-providers',
-  getParentRoute: () => DashboardRouteRoute,
-} as any)
 const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
   id: '/api/auth/$',
   path: '/api/auth/$',
@@ -79,7 +73,6 @@ export interface FileRoutesByFullPath {
   '/dashboard/members': typeof DashboardMembersRoute
   '/dashboard/permissions': typeof DashboardPermissionsRoute
   '/dashboard/roles': typeof DashboardRolesRoute
-  '/dashboard/sso-providers': typeof DashboardSsoProvidersRoute
   '/dashboard/': typeof DashboardIndexRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
 }
@@ -90,7 +83,6 @@ export interface FileRoutesByTo {
   '/dashboard/members': typeof DashboardMembersRoute
   '/dashboard/permissions': typeof DashboardPermissionsRoute
   '/dashboard/roles': typeof DashboardRolesRoute
-  '/dashboard/sso-providers': typeof DashboardSsoProvidersRoute
   '/dashboard': typeof DashboardIndexRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
 }
@@ -103,7 +95,6 @@ export interface FileRoutesById {
   '/dashboard/members': typeof DashboardMembersRoute
   '/dashboard/permissions': typeof DashboardPermissionsRoute
   '/dashboard/roles': typeof DashboardRolesRoute
-  '/dashboard/sso-providers': typeof DashboardSsoProvidersRoute
   '/dashboard/': typeof DashboardIndexRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
 }
@@ -117,7 +108,6 @@ export interface FileRouteTypes {
     | '/dashboard/members'
     | '/dashboard/permissions'
     | '/dashboard/roles'
-    | '/dashboard/sso-providers'
     | '/dashboard/'
     | '/api/auth/$'
   fileRoutesByTo: FileRoutesByTo
@@ -128,7 +118,6 @@ export interface FileRouteTypes {
     | '/dashboard/members'
     | '/dashboard/permissions'
     | '/dashboard/roles'
-    | '/dashboard/sso-providers'
     | '/dashboard'
     | '/api/auth/$'
   id:
@@ -140,7 +129,6 @@ export interface FileRouteTypes {
     | '/dashboard/members'
     | '/dashboard/permissions'
     | '/dashboard/roles'
-    | '/dashboard/sso-providers'
     | '/dashboard/'
     | '/api/auth/$'
   fileRoutesById: FileRoutesById
@@ -209,13 +197,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardRolesRouteImport
       parentRoute: typeof DashboardRouteRoute
     }
-    '/dashboard/sso-providers': {
-      id: '/dashboard/sso-providers'
-      path: '/sso-providers'
-      fullPath: '/dashboard/sso-providers'
-      preLoaderRoute: typeof DashboardSsoProvidersRouteImport
-      parentRoute: typeof DashboardRouteRoute
-    }
     '/api/auth/$': {
       id: '/api/auth/$'
       path: '/api/auth/$'
@@ -232,7 +213,6 @@ interface DashboardRouteRouteChildren {
   DashboardMembersRoute: typeof DashboardMembersRoute
   DashboardPermissionsRoute: typeof DashboardPermissionsRoute
   DashboardRolesRoute: typeof DashboardRolesRoute
-  DashboardSsoProvidersRoute: typeof DashboardSsoProvidersRoute
   DashboardIndexRoute: typeof DashboardIndexRoute
 }
 
@@ -242,7 +222,6 @@ const DashboardRouteRouteChildren: DashboardRouteRouteChildren = {
   DashboardMembersRoute: DashboardMembersRoute,
   DashboardPermissionsRoute: DashboardPermissionsRoute,
   DashboardRolesRoute: DashboardRolesRoute,
-  DashboardSsoProvidersRoute: DashboardSsoProvidersRoute,
   DashboardIndexRoute: DashboardIndexRoute,
 }
 
