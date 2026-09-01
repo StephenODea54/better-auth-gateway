@@ -4,7 +4,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { getRequest } from "@tanstack/react-start/server";
 import { eq } from "drizzle-orm";
 
-import type { QueryConfig } from "@/lib/react-query.ts";
+import type { ApiFnReturnType, QueryConfig } from "@/lib/react-query.ts";
 
 import { env } from "@/config/env.ts";
 import { db } from "@/db/clients/db-client.ts";
@@ -22,11 +22,13 @@ export const listApplications = createServerFn().handler(async () => {
     const rows = await db
       .select({
         audienceUri: ssoProvider.issuer,
+        domain: ssoProvider.domain,
         id: organization.id,
         name: organization.name,
         origin: organization.origin,
         providerId: ssoProvider.id,
         providerName: ssoProvider.providerId,
+        samlConfig: ssoProvider.samlConfig,
       })
       .from(organization)
       .innerJoin(member, eq(member.organizationId, organization.id))
@@ -34,23 +36,37 @@ export const listApplications = createServerFn().handler(async () => {
       .where(eq(member.userId, session.user.id))
       .orderBy(organization.name);
 
-    return rows.map(row => ({
-      acsUrl: `${env.BETTER_AUTH_URL}/api/auth/sso/saml2/sp/acs/${row.providerName}`,
-      audienceUri: row.audienceUri,
-      id: row.id,
-      name: row.name,
-      origin: row.origin,
-      ssoProvider: {
-        id: row.providerId,
-        name: row.providerName,
-      },
-    }));
+    return rows.map((row) => {
+      const samlConfig = JSON.parse(row.samlConfig ?? "{}") as {
+        cert?: string;
+        entryPoint?: string;
+        idpMetadata?: { entityID?: string };
+      };
+
+      return {
+        acsUrl: `${env.BETTER_AUTH_URL}/api/auth/sso/saml2/sp/acs/${row.providerName}`,
+        audienceUri: row.audienceUri,
+        id: row.id,
+        name: row.name,
+        origin: row.origin,
+        ssoProvider: {
+          certificate: samlConfig.cert ?? "",
+          domain: row.domain,
+          entityId: samlConfig.idpMetadata?.entityID ?? "",
+          entryPoint: samlConfig.entryPoint ?? "",
+          id: row.providerId,
+          name: row.providerName,
+        },
+      };
+    });
   }
   catch (error) {
     console.error(error);
     throw new Error("Error loading applications");
   }
 });
+
+export type Application = ApiFnReturnType<typeof listApplications>[number];
 
 interface UseApplicationsOptions {
   queryConfig?: QueryConfig<typeof listApplicationsQueryOptions>;

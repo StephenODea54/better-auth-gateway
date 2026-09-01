@@ -10,6 +10,8 @@ import {
 } from "@tanstack/react-table";
 import { AppWindowIcon, TriangleAlertIcon } from "lucide-react";
 
+import type { Application } from "@/features/applications/api/list-applications.ts";
+
 import { CopyButton } from "@/components/ui/copy-button.tsx";
 import {
   Empty,
@@ -36,9 +38,7 @@ import {
   TableRow,
 } from "@/components/ui/table.tsx";
 import { useApplications } from "@/features/applications/api/list-applications.ts";
-
-type Application = ReturnType<typeof useApplications>["data"] extends
-  (infer Row)[] | undefined ? Row : never;
+import { ApplicationActions } from "@/features/applications/components/application-actions.tsx";
 
 const columnHelper = createColumnHelper<TableFeatures, Application>();
 
@@ -67,6 +67,11 @@ const columns = columnHelper.columns([
   columnHelper.accessor("audienceUri", {
     cell: info => <CopyButton label="audience URI" value={info.getValue()} />,
     header: "Audience URI",
+  }),
+  columnHelper.display({
+    cell: info => <ApplicationActions application={info.row.original} />,
+    header: () => <span className="sr-only">Actions</span>,
+    id: "actions",
   }),
 ]);
 
