@@ -25,24 +25,19 @@ export function TablePagination({
   pageIndex,
   pageSize,
 }: TablePaginationProps) {
-  if (pageCount <= 1) {
-    return null;
-  }
-
+  const lastPage = Math.max(pageCount - 1, 0);
   const firstRow = pageIndex * pageSize + 1;
   const lastRow = Math.min(firstRow + pageSize - 1, matchCount);
   const canPreviousPage = pageIndex > 0;
-  const canNextPage = pageIndex < pageCount - 1;
-  const pages = pageWindow(pageIndex, pageCount);
+  const canNextPage = pageIndex < lastPage;
+  const pages = pageWindow(pageIndex, Math.max(pageCount, 1));
 
   return (
     <div className="flex flex-wrap items-center justify-between gap-2">
       <p className="text-sm text-muted-foreground">
-        {firstRow}
-        –
-        {lastRow}
-        {" of "}
-        {matchCount}
+        {matchCount === 0
+          ? "No results"
+          : `${firstRow}–${lastRow} of ${matchCount}`}
       </p>
 
       <Pagination className="mx-0 w-auto justify-end">
@@ -56,6 +51,7 @@ export function TablePagination({
                 event.preventDefault();
                 onPageChange(pageIndex - 1);
               }}
+              tabIndex={canPreviousPage ? undefined : -1}
             />
           </PaginationItem>
 
@@ -91,6 +87,7 @@ export function TablePagination({
                 event.preventDefault();
                 onPageChange(pageIndex + 1);
               }}
+              tabIndex={canNextPage ? undefined : -1}
             />
           </PaginationItem>
         </PaginationContent>
