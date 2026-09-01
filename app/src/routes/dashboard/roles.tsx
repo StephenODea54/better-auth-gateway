@@ -34,29 +34,28 @@ export function Roles() {
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-4">
       <div className="space-y-1">
-        <div className="flex flex-wrap items-center gap-3">
-          <h1 className="text-2xl font-semibold tracking-tight">Roles</h1>
-          {isPending && <Skeleton className="h-9 w-56" />}
-          {applications && applications.length > 0 && (
-            <Select onValueChange={setSelectedId} value={organizationId}>
-              <SelectTrigger className="w-56">
-                <SelectValue placeholder="Select an application" />
-              </SelectTrigger>
-              <SelectContent>
-                {applications.map(application => (
-                  <SelectItem key={application.id} value={application.id}>
-                    {application.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          )}
-        </div>
+        <h1 className="text-2xl font-semibold tracking-tight">Roles</h1>
         <p className="text-sm text-muted-foreground">
-          A role is a set of granted resource:action pairs. Saved changes take effect on the next
-          request — no restart, no cache flush.
+          A role is a set of granted resource:action pairs.
         </p>
       </div>
+
+      {isPending && <Skeleton className="h-9 w-56" />}
+
+      {applications && applications.length > 0 && (
+        <Select onValueChange={setSelectedId} value={organizationId}>
+          <SelectTrigger className="w-56">
+            <SelectValue placeholder="Select an application" />
+          </SelectTrigger>
+          <SelectContent>
+            {applications.map(application => (
+              <SelectItem key={application.id} value={application.id}>
+                {application.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      )}
 
       {applications && applications.length === 0 && (
         <Empty className="flex-1 rounded-xl border">
