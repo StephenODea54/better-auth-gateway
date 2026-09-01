@@ -95,6 +95,7 @@ export const organization = pgTable("organization", {
   logo: text("logo"),
   createdAt: timestamp("created_at").notNull(),
   metadata: text("metadata"),
+  origin: text("origin").notNull(),
 });
 
 export const organizationRole = pgTable(

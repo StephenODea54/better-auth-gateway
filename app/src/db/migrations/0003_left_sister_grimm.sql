@@ -1,0 +1,1 @@
+ALTER TABLE "organization" ADD COLUMN "origin" text NOT NULL;

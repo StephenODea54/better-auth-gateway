@@ -24,6 +24,13 @@ export const auth = betterAuth({
       creatorRole: "owner",
       dynamicAccessControl: { enabled: true },
       roles,
+      schema: {
+        organization: {
+          additionalFields: {
+            origin: { input: true, required: true, type: "string" },
+          },
+        },
+      },
     }),
     sso({
       defaultSSO: [{
