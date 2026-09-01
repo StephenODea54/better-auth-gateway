@@ -17,6 +17,7 @@
 !.gitignore
 !compose.yaml
 !Dockerfile
+!LICENSE
 !pre-commit
 
 # And filetypes
