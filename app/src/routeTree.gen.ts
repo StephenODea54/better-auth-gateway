@@ -13,6 +13,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as DashboardRouteRouteImport } from './routes/dashboard/route'
 import { Route as ApiTokenRouteImport } from './routes/api/token'
 import { Route as DashboardIndexRouteImport } from './routes/dashboard/index'
+import { Route as DashboardActivityRouteImport } from './routes/dashboard/activity'
 import { Route as DashboardApplicationsRouteImport } from './routes/dashboard/applications'
 import { Route as DashboardMembersRouteImport } from './routes/dashboard/members'
 import { Route as DashboardPermissionsRouteImport } from './routes/dashboard/permissions'
@@ -37,6 +38,11 @@ const ApiTokenRoute = ApiTokenRouteImport.update({
 const DashboardIndexRoute = DashboardIndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => DashboardRouteRoute,
+} as any)
+const DashboardActivityRoute = DashboardActivityRouteImport.update({
+  id: '/activity',
+  path: '/activity',
   getParentRoute: () => DashboardRouteRoute,
 } as any)
 const DashboardApplicationsRoute = DashboardApplicationsRouteImport.update({
@@ -69,6 +75,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/dashboard': typeof DashboardRouteRouteWithChildren
   '/api/token': typeof ApiTokenRoute
+  '/dashboard/activity': typeof DashboardActivityRoute
   '/dashboard/applications': typeof DashboardApplicationsRoute
   '/dashboard/members': typeof DashboardMembersRoute
   '/dashboard/permissions': typeof DashboardPermissionsRoute
@@ -79,6 +86,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/api/token': typeof ApiTokenRoute
+  '/dashboard/activity': typeof DashboardActivityRoute
   '/dashboard/applications': typeof DashboardApplicationsRoute
   '/dashboard/members': typeof DashboardMembersRoute
   '/dashboard/permissions': typeof DashboardPermissionsRoute
@@ -91,6 +99,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/dashboard': typeof DashboardRouteRouteWithChildren
   '/api/token': typeof ApiTokenRoute
+  '/dashboard/activity': typeof DashboardActivityRoute
   '/dashboard/applications': typeof DashboardApplicationsRoute
   '/dashboard/members': typeof DashboardMembersRoute
   '/dashboard/permissions': typeof DashboardPermissionsRoute
@@ -104,6 +113,7 @@ export interface FileRouteTypes {
     | '/'
     | '/dashboard'
     | '/api/token'
+    | '/dashboard/activity'
     | '/dashboard/applications'
     | '/dashboard/members'
     | '/dashboard/permissions'
@@ -114,6 +124,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/api/token'
+    | '/dashboard/activity'
     | '/dashboard/applications'
     | '/dashboard/members'
     | '/dashboard/permissions'
@@ -125,6 +136,7 @@ export interface FileRouteTypes {
     | '/'
     | '/dashboard'
     | '/api/token'
+    | '/dashboard/activity'
     | '/dashboard/applications'
     | '/dashboard/members'
     | '/dashboard/permissions'
@@ -170,6 +182,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardIndexRouteImport
       parentRoute: typeof DashboardRouteRoute
     }
+    '/dashboard/activity': {
+      id: '/dashboard/activity'
+      path: '/activity'
+      fullPath: '/dashboard/activity'
+      preLoaderRoute: typeof DashboardActivityRouteImport
+      parentRoute: typeof DashboardRouteRoute
+    }
     '/dashboard/applications': {
       id: '/dashboard/applications'
       path: '/applications'
@@ -209,6 +228,7 @@ declare module '@tanstack/react-router' {
 }
 
 interface DashboardRouteRouteChildren {
+  DashboardActivityRoute: typeof DashboardActivityRoute
   DashboardApplicationsRoute: typeof DashboardApplicationsRoute
   DashboardMembersRoute: typeof DashboardMembersRoute
   DashboardPermissionsRoute: typeof DashboardPermissionsRoute
@@ -217,6 +237,7 @@ interface DashboardRouteRouteChildren {
 }
 
 const DashboardRouteRouteChildren: DashboardRouteRouteChildren = {
+  DashboardActivityRoute: DashboardActivityRoute,
   DashboardApplicationsRoute: DashboardApplicationsRoute,
   DashboardMembersRoute: DashboardMembersRoute,
   DashboardPermissionsRoute: DashboardPermissionsRoute,
