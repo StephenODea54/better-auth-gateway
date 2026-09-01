@@ -9,7 +9,7 @@ import type { MutationConfig } from "@/lib/react-query.ts";
 import { db } from "@/db/clients/db-client.ts";
 import { organizationRole } from "@/db/schema/index.ts";
 import { auth } from "@/features/auth/clients/server-client.ts";
-import { setEventError } from "@/lib/wide-event.ts";
+import { setEvent, setEventError } from "@/lib/wide-event.ts";
 
 import { listResourcesQueryOptions } from "./list-resources.ts";
 
@@ -29,6 +29,8 @@ export type CreateResourceInput = z.infer<typeof createResourceInputSchema>;
 export const createResource = createServerFn({ method: "POST" })
   .validator(createResourceInputSchema)
   .handler(async ({ data }) => {
+    setEvent({ "event.kind": "resource.saved", "organization.id": data.organizationId });
+
     const { success } = await auth.api.hasPermission({
       body: {
         organizationId: data.organizationId,

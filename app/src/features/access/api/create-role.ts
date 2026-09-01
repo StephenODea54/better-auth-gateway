@@ -11,7 +11,7 @@ import { organizationRole } from "@/db/schema/index.ts";
 import { auth } from "@/features/auth/clients/server-client.ts";
 import { roles } from "@/features/auth/lib/access-control.ts";
 import { SUPER_ADMIN_MEMBER_MARKER } from "@/features/auth/lib/super-admin.ts";
-import { setEventError } from "@/lib/wide-event.ts";
+import { setEvent, setEventError } from "@/lib/wide-event.ts";
 
 import { listRolesQueryOptions } from "./list-roles.ts";
 
@@ -28,6 +28,8 @@ export type CreateRoleInput = z.infer<typeof createRoleInputSchema>;
 export const createRole = createServerFn({ method: "POST" })
   .validator(createRoleInputSchema)
   .handler(async ({ data }) => {
+    setEvent({ "event.kind": "role.created", "organization.id": data.organizationId });
+
     const { success } = await auth.api.hasPermission({
       body: {
         organizationId: data.organizationId,

@@ -10,7 +10,7 @@ import { db } from "@/db/clients/db-client.ts";
 import { organizationRole } from "@/db/schema/index.ts";
 import { auth } from "@/features/auth/clients/server-client.ts";
 import { ac, roles } from "@/features/auth/lib/access-control.ts";
-import { setEventError } from "@/lib/wide-event.ts";
+import { setEvent, setEventError } from "@/lib/wide-event.ts";
 
 import { listRolesQueryOptions } from "./list-roles.ts";
 
@@ -25,6 +25,8 @@ export type UpdateRoleInput = z.infer<typeof updateRoleInputSchema>;
 export const updateRole = createServerFn({ method: "POST" })
   .validator(updateRoleInputSchema)
   .handler(async ({ data }) => {
+    setEvent({ "event.kind": "role.updated", "organization.id": data.organizationId });
+
     const { success } = await auth.api.hasPermission({
       body: {
         organizationId: data.organizationId,

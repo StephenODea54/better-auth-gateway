@@ -9,7 +9,7 @@ import type { MutationConfig } from "@/lib/react-query.ts";
 import { db } from "@/db/clients/db-client.ts";
 import { ssoProvider } from "@/db/schema/index.ts";
 import { auth } from "@/features/auth/clients/server-client.ts";
-import { setEventError } from "@/lib/wide-event.ts";
+import { setEvent, setEventError } from "@/lib/wide-event.ts";
 
 import { listApplicationsQueryOptions } from "./list-applications.ts";
 
@@ -28,6 +28,8 @@ export type UpdateApplicationInput = z.infer<typeof updateApplicationInputSchema
 export const updateApplication = createServerFn({ method: "POST" })
   .validator(updateApplicationInputSchema)
   .handler(async ({ data }) => {
+    setEvent({ "event.kind": "application.updated", "organization.id": data.id });
+
     const headers = getRequest().headers;
 
     const [provider] = await db

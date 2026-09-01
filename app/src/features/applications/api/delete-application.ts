@@ -9,7 +9,7 @@ import type { MutationConfig } from "@/lib/react-query.ts";
 import { db } from "@/db/clients/db-client.ts";
 import { ssoProvider } from "@/db/schema/index.ts";
 import { auth } from "@/features/auth/clients/server-client.ts";
-import { setEventError } from "@/lib/wide-event.ts";
+import { setEvent, setEventError } from "@/lib/wide-event.ts";
 
 import { listApplicationsQueryOptions } from "./list-applications.ts";
 
@@ -21,6 +21,8 @@ export const deleteApplicationInputSchema = z.object({
 export const deleteApplication = createServerFn({ method: "POST" })
   .validator(deleteApplicationInputSchema)
   .handler(async ({ data }) => {
+    setEvent({ "event.kind": "application.deleted", "organization.id": data.id });
+
     const headers = getRequest().headers;
 
     const [provider] = await db

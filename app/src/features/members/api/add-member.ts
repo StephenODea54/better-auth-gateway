@@ -11,7 +11,7 @@ import { db } from "@/db/clients/db-client.ts";
 import { user } from "@/db/schema/index.ts";
 import { auth } from "@/features/auth/clients/server-client.ts";
 import { SUPER_ADMIN_MEMBER_MARKER } from "@/features/auth/lib/super-admin.ts";
-import { setEventError } from "@/lib/wide-event.ts";
+import { setEvent, setEventError } from "@/lib/wide-event.ts";
 
 import { listMembersQueryOptions } from "./list-members.ts";
 
@@ -30,6 +30,8 @@ export type AddMemberInput = z.infer<typeof addMemberInputSchema>;
 export const addMember = createServerFn({ method: "POST" })
   .validator(addMemberInputSchema)
   .handler(async ({ data }) => {
+    setEvent({ "event.kind": "member.added", "organization.id": data.organizationId });
+
     type MemberRole = NonNullable<Parameters<typeof auth.api.addMember>[0]>["body"]["role"];
 
     const { headers } = getRequest();

@@ -10,7 +10,7 @@ import { db } from "@/db/clients/db-client.ts";
 import { member, organizationRole } from "@/db/schema/index.ts";
 import { auth } from "@/features/auth/clients/server-client.ts";
 import { roles } from "@/features/auth/lib/access-control.ts";
-import { setEventError } from "@/lib/wide-event.ts";
+import { setEvent, setEventError } from "@/lib/wide-event.ts";
 
 import { listRolesQueryOptions } from "./list-roles.ts";
 
@@ -22,6 +22,8 @@ export const deleteRoleInputSchema = z.object({
 export const deleteRole = createServerFn({ method: "POST" })
   .validator(deleteRoleInputSchema)
   .handler(async ({ data }) => {
+    setEvent({ "event.kind": "role.deleted", "organization.id": data.organizationId });
+
     const { success } = await auth.api.hasPermission({
       body: {
         organizationId: data.organizationId,

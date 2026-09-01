@@ -11,7 +11,7 @@ import {
   isSuperAdminMembership,
   SUPER_ADMIN_MEMBER_MARKER,
 } from "@/features/auth/lib/super-admin.ts";
-import { setEventError } from "@/lib/wide-event.ts";
+import { setEvent, setEventError } from "@/lib/wide-event.ts";
 
 import { listMembersQueryOptions } from "./list-members.ts";
 
@@ -27,6 +27,8 @@ export type UpdateMemberRolesInput = z.infer<typeof updateMemberRolesInputSchema
 export const updateMemberRoles = createServerFn({ method: "POST" })
   .validator(updateMemberRolesInputSchema)
   .handler(async ({ data }) => {
+    setEvent({ "event.kind": "member.roles_updated", "organization.id": data.organizationId });
+
     if (data.roles.includes(SUPER_ADMIN_MEMBER_MARKER)) {
       throw new Error(`${SUPER_ADMIN_MEMBER_MARKER} is reserved for gateway super admins.`);
     }

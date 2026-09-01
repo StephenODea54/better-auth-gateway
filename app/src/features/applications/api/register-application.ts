@@ -9,7 +9,7 @@ import { env } from "@/config/env.ts";
 import { slugify } from "@/features/applications/lib/slugify.ts";
 import { auth } from "@/features/auth/clients/server-client.ts";
 import { isSuperAdmin } from "@/features/auth/lib/super-admin.ts";
-import { setEventError } from "@/lib/wide-event.ts";
+import { setEvent, setEventError } from "@/lib/wide-event.ts";
 
 import { listApplicationsQueryOptions } from "./list-applications.ts";
 
@@ -60,6 +60,8 @@ export const registerApplication = createServerFn({ method: "POST" })
     if (!application) {
       throw new Error("Could not create the application.");
     }
+
+    setEvent({ "event.kind": "application.registered", "organization.id": application.id });
 
     try {
       await auth.api.registerSSOProvider({
