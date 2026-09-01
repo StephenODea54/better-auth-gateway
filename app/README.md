@@ -1,10 +1,13 @@
-Welcome to your new TanStack Start app!
+# Development
 
-## Local setup
+`compose.yaml` is for local development only. It runs the gateway, a throwaway
+Postgres and a mock SAML IdP, so you can exercise the whole sign-in flow without a
+real identity provider. It is not a deployment artifact.
 
-`docker compose up` runs the whole stack -- app, Postgres and the mock IdP -- and
-mints the mock IdP's keypair itself. Run the same script on the host once to copy
-the certificate into `.env` as `SSO_IDP_CERT`; it is idempotent and reuses the
+## Setup
+
+Compose mints the mock IdP's keypair itself. Run the same script on the host once to
+copy the certificate into `.env` as `SSO_IDP_CERT`; it is idempotent and reuses the
 keypair compose already made.
 
 ```bash
@@ -15,22 +18,24 @@ docker compose -f ../compose.yaml up -d app
 ```
 
 Sign in at `http://localhost:3000` with `Continue with Okta`. The mock IdP is at
-`http://localhost:4000` and vouches for any `@example.com` address.
+`http://localhost:4000` and vouches for any `@example.com` address. The first person
+to sign in becomes the gateway super admin.
 
 The `migrate` service applies migrations before the app starts, so there is no
 separate migrate step.
 
-The `app` service runs `vite dev` with `./app` bind-mounted over `/app`, so edits
-on the host hot reload without rebuilding the image. `node_modules` sits in a
-named volume so the container keeps its own Linux-native binaries instead of the
-host's macOS ones.
+## Hot reload
+
+The `app` service runs `vite dev` with `./app` bind-mounted over `/app`, so edits on
+the host hot reload without rebuilding the image. `node_modules` sits in a named
+volume so the container keeps its own Linux-native binaries instead of the host's.
 
 That volume is populated once when it is created, so after changing dependencies
 reset it and rebuild:
 
 ```bash
 docker compose -f ../compose.yaml rm -sf app
-docker volume rm internal-better-auth-gateway_app-node-modules
+docker volume rm better-auth-gateway_app-node-modules
 docker compose -f ../compose.yaml up -d --build app
 ```
 
@@ -40,267 +45,36 @@ swap the watcher over to polling.
 To run the app on the host instead, stop the `app` service so it frees port 3000,
 then use `pnpm db:migrate` and `pnpm dev` with `POSTGRES_HOST=localhost`.
 
-## Production image
+## Layout
 
-Deployment does not use compose. The `runtime` stage of `Dockerfile` is the image
-to push to ECR: it carries only the Nitro build output and runs as the non-root
-`node` user.
+- `src/routes` -- file-based routes. `api/auth/$.ts` mounts Better Auth;
+  `api/token.ts` is the token exchange apps call.
+- `src/features/*` -- one folder per area, each with `api` (server functions and
+  their React Query hooks), `components` and `lib`.
+- `src/db` -- Drizzle schema, migrations and config. `auth-schema.ts` is generated
+  by `pnpm auth:generate`; do not edit it by hand.
+- `src/config/env.ts` -- every environment variable, validated at boot.
+
+## Commands
+
+```bash
+pnpm dev              # vite dev server on :3000
+pnpm build            # nitro build into .output
+pnpm lint             # eslint
+pnpm db:generate      # generate a migration from schema changes
+pnpm db:migrate       # apply migrations
+pnpm db:studio        # drizzle studio
+pnpm auth:generate    # regenerate auth-schema.ts from the Better Auth config
+```
+
+## Building the production image
+
+Deployment does not use compose. The `runtime` stage of `Dockerfile` is the image to
+publish: it carries only the Nitro build output and runs as the non-root `node` user.
 
 ```bash
 docker build --target runtime -t auth-gateway ./app
 ```
 
-Nothing is baked in at build time -- every value in `src/config/env.ts` is read
-from the environment when the server boots, which is what the ECS task definition
-supplies.
-
-@ Getting Started
-
-To run this application:
-
-```bash
-npm install
-npm run dev
-```
-
-@ Building For Production
-
-To build this application for production:
-
-```bash
-npm run build
-```
-
-@@ Styling
-
-This project uses [Tailwind CSS](https://tailwindcss.com/) for styling.
-
-@@@ Removing Tailwind CSS
-
-If you prefer not to use Tailwind CSS:
-
-1. Remove the demo pages in `src/routes/demo/`
-2. Replace the Tailwind import in `src/styles.css` with your own styles
-3. Remove `tailwindcss()` from the plugins array in `vite.config.ts`
-4. Remove `@tailwindcss/vite` and `tailwindcss` from `package.json`
-
-@@ Deploy with Nitro
-
-This project uses Nitro as a generic server adapter, so it can run on any Node-compatible host.
-
-```bash
-npm run build
-node dist/server/index.mjs
-```
-
-The build output is a self-contained Node server. To deploy, push the `dist/` directory to your host (Render, Fly.io, your own VPS, etc.) and run the server command above.
-
-For host-specific presets (Vercel, Netlify, Cloudflare, AWS Lambda, etc.) and tuning, see https://v3.nitro.build/deploy.
-
-@@ Shadcn
-
-Add components using the latest version of [Shadcn](https://ui.shadcn.com/).
-
-```bash
-pnpm dlx shadcn@latest add button
-```
-
-@@ T3Env
-
-- You can use T3Env to add type safety to your environment variables.
-- Add Environment variables to the `src/env.mjs` file.
-- Use the environment variables in your code.
-
-@@@ Usage
-
-```ts
-import { env } from "@/env";
-
-console.log(env.VITE_APP_TITLE);
-```
-
-@@ Setting up Better Auth
-
-1. Generate and set the `BETTER_AUTH_SECRET` environment variable in your `.env.local`:
-
-   ```bash
-   npx -y @better-auth/cli secret
-   ```
-
-2. Visit the [Better Auth documentation](https://www.better-auth.com) to unlock the full potential of authentication in your app.
-
-@@@ Adding a Database (Optional)
-
-Better Auth can work in stateless mode, but to persist user data, add a database:
-
-```typescript
-// src/lib/auth.ts
-import { betterAuth } from "better-auth";
-import { Pool } from "pg";
-
-export const auth = betterAuth({
-  database: new Pool({
-    connectionString: process.env.DATABASE_URL,
-  }),
-  // ... rest of config
-});
-```
-
-Then run migrations:
-
-```bash
-npx -y @better-auth/cli migrate
-```
-
-@@ Routing
-
-This project uses [TanStack Router](https://tanstack.com/router) with file-based routing. Routes are managed as files in `src/routes`.
-
-@@@ Adding A Route
-
-To add a new route to your application just add a new file in the `./src/routes` directory.
-
-TanStack will automatically generate the content of the route file for you.
-
-Now that you have two routes you can use a `Link` component to navigate between them.
-
-@@@ Adding Links
-
-To use SPA (Single Page Application) navigation you will need to import the `Link` component from `@tanstack/react-router`.
-
-```tsx
-import { Link } from "@tanstack/react-router";
-```
-
-Then anywhere in your JSX you can use it like so:
-
-```tsx
-<Link to="/about">About</Link>;
-```
-
-This will create a link that will navigate to the `/about` route.
-
-More information on the `Link` component can be found in the [Link documentation](https://tanstack.com/router/v1/docs/framework/react/api/router/linkComponent).
-
-@@@ Using A Layout
-
-In the File Based Routing setup the layout is located in `src/routes/__root.tsx`. Anything you add to the root route will appear in all the routes. The route content will appear in the JSX where you render `{children}` in the `shellComponent`.
-
-Here is an example layout that includes a header:
-
-```tsx
-import { createRootRoute, HeadContent, Scripts } from "@tanstack/react-router";
-
-export const Route = createRootRoute({
-  head: () => ({
-    meta: [
-      { charSet: "utf-8" },
-      { content: "width=device-width, initial-scale=1", name: "viewport" },
-      { title: "My App" },
-    ],
-  }),
-  shellComponent: ({ children }) => (
-    <html lang="en">
-      <head>
-        <HeadContent />
-      </head>
-      <body>
-        <header>
-          <nav>
-            <Link to="/">Home</Link>
-            <Link to="/about">About</Link>
-          </nav>
-        </header>
-        {children}
-        <Scripts />
-      </body>
-    </html>
-  ),
-});
-```
-
-More information on layouts can be found in the [Layouts documentation](https://tanstack.com/router/latest/docs/framework/react/guide/routing-concepts@layouts).
-
-@@ Server Functions
-
-TanStack Start provides server functions that allow you to write server-side code that seamlessly integrates with your client components.
-
-```tsx
-import { createServerFn } from "@tanstack/react-start";
-
-const getServerTime = createServerFn({
-  method: "GET",
-}).handler(async () => {
-  return new Date().toISOString();
-});
-
-// Use in a component
-function MyComponent() {
-  const [time, setTime] = useState("");
-
-  useEffect(() => {
-    getServerTime().then(setTime);
-  }, []);
-
-  return (
-    <div>
-      Server time:
-      {time}
-    </div>
-  );
-}
-```
-
-@@ API Routes
-
-You can create API routes by using the `server` property in your route definitions:
-
-```tsx
-import { createFileRoute } from "@tanstack/react-router";
-import { json } from "@tanstack/react-start";
-
-export const Route = createFileRoute("/api/hello")({
-  server: {
-    handlers: {
-      GET: () => json({ message: "Hello, World!" }),
-    },
-  },
-});
-```
-
-@@ Data Fetching
-
-There are multiple ways to fetch data in your application. You can use TanStack Query to fetch data from a server. But you can also use the `loader` functionality built into TanStack Router to load the data for a route before it's rendered.
-
-For example:
-
-```tsx
-import { createFileRoute } from "@tanstack/react-router";
-
-export const Route = createFileRoute("/people")({
-  component: PeopleComponent,
-  loader: async () => {
-    const response = await fetch("https://swapi.dev/api/people");
-    return response.json();
-  },
-});
-
-function PeopleComponent() {
-  const data = Route.useLoaderData();
-  return (
-    <ul>
-      {data.results.map(person => (
-        <li key={person.name}>{person.name}</li>
-      ))}
-    </ul>
-  );
-}
-```
-
-Loaders simplify your data fetching logic dramatically. Check out more information in the [Loader documentation](https://tanstack.com/router/latest/docs/framework/react/guide/data-loading@loader-parameters).
-
-@ Learn More
-
-You can learn more about all of the offerings from TanStack in the [TanStack documentation](https://tanstack.com).
-
-For TanStack Start specific documentation, visit [TanStack Start](https://tanstack.com/start).
+Nothing is baked in at build time -- every value in `src/config/env.ts` is read from
+the environment when the server boots.

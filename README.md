@@ -1,0 +1,222 @@
+# Auth Gateway
+
+A small, self-hosted sign-in service for organisations that run a lot of internal
+apps. Your people sign in once, against your existing identity provider, and each
+app asks the gateway for a short-lived token instead of running authentication of
+its own.
+
+## Why this exists
+
+Internal tooling multiplies. You end up with a dozen small serverless apps -- a
+billing dashboard here, an ops console there -- and every one of them needs to know
+who is calling and what they are allowed to do.
+
+The usual answer is to give each app its own auth infrastructure: a user pool, a
+managed identity service, a database to hold sessions. That is a lot of moving parts
+and a lot of line items on a cloud bill for what is, in practice, one question asked
+twelve times. It is especially hard to justify when the apps are internal: it is the
+same fifty people every time, just signed into different tools.
+
+This gateway is the other answer. One service, one database, one connection to your
+identity provider. Apps stay stateless. They redirect to the gateway, exchange the
+gateway session for a signed token scoped to them, and verify it with a public key.
+No SDK to install, no shared secret to distribute, no per-app auth infrastructure.
+
+## How it works
+
+```
+                                     ┌───────────────────┐
+  ┌────────────┐   SAML              │                   │
+  │ Your IdP   │◄────────────────────┤   Auth Gateway    │
+  │ (Okta, …)  │                     │                   │
+  └────────────┘                     │  Postgres ◄───────┤
+                                     └─────────┬─────────┘
+                                          ▲    │
+                  session cookie          │    │  JWT (aud = your app)
+                                          │    ▼
+                                     ┌───────────────────┐
+                                     │  Your app         │
+                                     │  verifies via     │
+                                     │  /api/auth/jwks   │
+                                     └───────────────────┘
+```
+
+1. A gateway super admin **registers an application**. That records the app's exact
+   origin and connects it to a SAML provider at your IdP.
+2. People are **added as members** of that application and given roles.
+3. Someone opens your app. The app calls the gateway's token endpoint with
+   credentials; if there is no gateway session yet it gets a `401` and sends the
+   person to the gateway to sign in.
+4. The gateway hands back a **short-lived JWT** whose audience is the app's
+   registered origin, carrying the roles and permissions that person holds *in that
+   application only*.
+5. The app **verifies the token against the gateway's JWKS**. Nothing is shared
+   between the two beyond a public key.
+
+The token endpoint is locked to the origin recorded at registration, so a token
+minted for one app cannot be requested from another.
+
+### What is in a token
+
+```json
+{
+  "sub": "user_01hb…",
+  "email": "ada@example.com",
+  "name": "Ada Lovelace",
+  "application": "billing",
+  "roles": ["auditor", "support"],
+  "permissions": { "invoices": ["read"], "refunds": ["read", "issue"] },
+  "aud": "https://billing.example.com",
+  "iss": "https://auth.example.com"
+}
+```
+
+`permissions` is the union of every permission attached to the roles that person
+holds in that application. Your app can authorise off `permissions` and never has to
+know what your role names mean.
+
+## What you get
+
+A dashboard with five pages:
+
+- **Applications** -- register an app, record its origin, connect its IdP.
+- **Members** -- who can reach which application, and in what roles.
+- **Roles** -- roles defined per application, at runtime, through the UI.
+- **Permissions** -- the resources and actions each application recognises, also
+  defined at runtime. This is the part that is not stock Better Auth.
+- **Activity** -- one wide event per request, retained for ninety days.
+
+Most of the behaviour underneath is [Better Auth](https://www.better-auth.com) --
+its organization, admin, JWT and SSO plugins do the heavy lifting. The custom work
+is the dynamic resource and permission model, the token endpoint, and the dashboard.
+
+## Requirements
+
+- A **Postgres database**. The gateway does not ship one; you point it at yours.
+- A **SAML 2.0 identity provider** -- Okta, Entra ID, Google Workspace, OneLogin,
+  JumpCloud, Keycloak. Nothing here is specific to one vendor.
+- Somewhere to run **one container**.
+
+## Running it
+
+The published image is the gateway itself -- a Node server built by the `runtime`
+stage of [app/Dockerfile](app/Dockerfile).
+
+```bash
+docker pull ghcr.io/stephenodea54/better-auth-gateway:latest
+```
+
+Or build it yourself:
+
+```bash
+docker build --target runtime -t auth-gateway ./app
+```
+
+Nothing is baked in at build time. Every value in
+[app/src/config/env.ts](app/src/config/env.ts) is read from the environment at boot,
+so the same image runs in every environment.
+
+Migrations are not run by the image. Apply them from a checkout before you start a
+new version:
+
+```bash
+pnpm --dir app db:migrate
+```
+
+The first person to sign in becomes the gateway super admin. Super admins are the
+only people who can register applications, and they are enrolled into every
+application automatically.
+
+## Configuration
+
+| Variable | Required | What it is |
+| --- | --- | --- |
+| `BETTER_AUTH_URL` | yes | Public URL of the gateway. Also the `iss` of every token. |
+| `BETTER_AUTH_SECRET` | yes | Signing secret. Generate with `npx @better-auth/cli secret`. |
+| `POSTGRES_HOST` | yes | Your database. |
+| `POSTGRES_PORT` | yes | |
+| `POSTGRES_DB` | yes | |
+| `POSTGRES_USER` | yes | |
+| `POSTGRES_PASSWORD` | yes | |
+| `SSO_IDP_ENTRY_POINT` | yes | Your IdP's SAML sign-on URL, for signing into the gateway. |
+| `SSO_IDP_ENTITY_ID` | yes | Your IdP's entity ID. |
+| `SSO_IDP_CERT` | yes | Your IdP's signing certificate, base64 encoded. |
+| `SSO_EMAIL_DOMAIN` | yes | Email domain routed to that provider. |
+| `APP_NAME` | no | Shown in the browser title. Defaults to `Auth Gateway`. |
+| `SSO_PROVIDER_NAME` | no | What the sign-in button calls your IdP. Defaults to `SSO`. |
+| `SSO_PROVIDER_ID` | no | Internal key for the gateway's own provider. Defaults to `gateway`. |
+| `TOKEN_LIFETIME` | no | Lifetime of issued tokens. Defaults to `15m`. |
+| `NODE_ENV` | no | Defaults to `development`. |
+
+`SSO_PROVIDER_ID` is stored in the database, so changing it on a running deployment
+orphans the existing provider row. Pick it once, before you go live.
+
+[app/.env.example](app/.env.example) has the same list in copyable form.
+
+### Attribute mapping
+
+The gateway reads a person's email from the SAML `NameID`, which every IdP sends, so
+sign-in works out of the box. Display names are less consistent: it looks for
+`givenName` and `surname`, then `displayName`, and falls back to the email address.
+
+If your IdP names those attributes differently -- Entra ID sends full claim URIs, for
+example -- override them with `SSO_ATTRIBUTE_EMAIL`, `SSO_ATTRIBUTE_NAME`,
+`SSO_ATTRIBUTE_FIRST_NAME` and `SSO_ATTRIBUTE_LAST_NAME`. Each registered application
+has the same four fields on its own form, under **Attribute mapping**.
+
+## Integrating an app
+
+Ask for a token, and send the person to the gateway if there is not a session yet:
+
+```ts
+const response = await fetch(`${GATEWAY_URL}/api/token?application=billing`, {
+  credentials: "include",
+});
+
+if (response.status === 401) {
+  window.location.href = GATEWAY_URL;
+  return;
+}
+
+const { token } = await response.json();
+```
+
+Verify it on your side against the gateway's public keys:
+
+```ts
+import { createRemoteJWKSet, jwtVerify } from "jose";
+
+const jwks = createRemoteJWKSet(new URL(`${GATEWAY_URL}/api/auth/jwks`));
+
+const { payload } = await jwtVerify(token, jwks, {
+  audience: "https://billing.example.com",
+  issuer: GATEWAY_URL,
+});
+
+if (!payload.permissions?.invoices?.includes("read")) {
+  throw new Response("Forbidden", { status: 403 });
+}
+```
+
+That is the whole integration. No SDK, no shared secret, no auth tables in your app.
+
+## Local development
+
+[app/README.md](app/README.md) covers the development setup: `compose.yaml` runs the
+gateway, a throwaway Postgres and a mock SAML IdP so you can exercise the full
+sign-in flow without touching a real identity provider. **Compose is for local
+development only** -- it is not a deployment artifact, and the Postgres in it is not
+meant to hold anything you care about.
+
+## Scope
+
+Things this deliberately does not do:
+
+- **No password sign-in.** Identity comes from your IdP.
+- **Not a general-purpose IdP.** It sits behind yours; it does not replace it.
+- **Built for internal apps**, where the same population of people uses every app.
+  It is not designed for customer-facing sign-up.
+
+## License
+
+Not yet chosen.
