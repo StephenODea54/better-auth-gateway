@@ -1,3 +1,4 @@
+import { useLoaderData } from "@tanstack/react-router";
 import { Loader2Icon } from "lucide-react";
 import { toast } from "sonner";
 
@@ -12,6 +13,8 @@ import {
 import { useSignIn } from "@/features/auth/api/sign-in.ts";
 
 export function LoginForm() {
+  const { ssoProviderId, ssoProviderName } = useLoaderData({ from: "__root__" });
+
   const signIn = useSignIn({
     mutationConfig: {
       onError: (error) => {
@@ -28,7 +31,11 @@ export function LoginForm() {
       <CardHeader>
         <CardTitle className="text-xl">Sign in</CardTitle>
         <CardDescription>
-          Use your okta account to continue
+          Use your
+          {" "}
+          {ssoProviderName}
+          {" "}
+          account to continue
         </CardDescription>
       </CardHeader>
 
@@ -36,7 +43,7 @@ export function LoginForm() {
         <Button
           className="w-full"
           disabled={isRedirecting}
-          onClick={() => signIn.mutate()}
+          onClick={() => signIn.mutate(ssoProviderId)}
           type="button"
         >
           {isRedirecting
@@ -46,7 +53,7 @@ export function LoginForm() {
                   Redirecting…
                 </>
               )
-            : "Continue with Okta"}
+            : `Continue with ${ssoProviderName}`}
         </Button>
       </CardContent>
     </Card>

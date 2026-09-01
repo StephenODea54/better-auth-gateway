@@ -8,6 +8,7 @@ import {
 import { RootLayout } from "@/components/layouts/root-layout";
 import { RouteError } from "@/components/layouts/route-error.tsx";
 import { RouteNotFound } from "@/components/layouts/route-not-found.tsx";
+import { getBranding } from "@/config/branding.ts";
 import { getSession } from "@/features/auth/api/get-session.ts";
 
 import appCss from "../styles/index.css?url";
@@ -23,7 +24,7 @@ export const Route = createRootRouteWithContext<MyRouterContext>()({
       <RouteError {...props} />
     </main>
   ),
-  head: () => ({
+  head: ({ loaderData }) => ({
     links: [
       {
         href: appCss,
@@ -39,14 +40,16 @@ export const Route = createRootRouteWithContext<MyRouterContext>()({
         name: "viewport",
       },
       {
-        title: "TanStack Start Starter",
+        title: loaderData?.appName ?? "Auth Gateway",
       },
     ],
   }),
+  loader: () => getBranding(),
   notFoundComponent: () => (
     <main className="flex min-h-svh flex-col justify-center p-6">
       <RouteNotFound />
     </main>
   ),
   shellComponent: RootLayout,
+  staleTime: Number.POSITIVE_INFINITY,
 });

@@ -42,6 +42,12 @@ export const listApplications = createServerFn().handler(async () => {
         cert?: string;
         entryPoint?: string;
         idpMetadata?: { entityID?: string };
+        mapping?: {
+          email?: string;
+          firstName?: string;
+          lastName?: string;
+          name?: string;
+        };
       };
 
       return {
@@ -53,10 +59,14 @@ export const listApplications = createServerFn().handler(async () => {
         ssoProvider: {
           certificate: samlConfig.cert ?? "",
           domain: row.domain,
+          emailAttribute: samlConfig.mapping?.email ?? "",
           entityId: samlConfig.idpMetadata?.entityID ?? "",
           entryPoint: samlConfig.entryPoint ?? "",
+          firstNameAttribute: samlConfig.mapping?.firstName ?? "",
           id: row.providerId,
+          lastNameAttribute: samlConfig.mapping?.lastName ?? "",
           name: row.providerName,
+          nameAttribute: samlConfig.mapping?.name ?? "",
         },
       };
     });

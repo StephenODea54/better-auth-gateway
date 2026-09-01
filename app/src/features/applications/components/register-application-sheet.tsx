@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button.tsx";
 import {
   Field,
+  FieldDescription,
   FieldError,
   FieldGroup,
   FieldLabel,
@@ -36,7 +37,7 @@ export function RegisterApplicationSheet() {
       },
       onSuccess: (application) => {
         toast.success(`${application.name} was registered.`, {
-          description: "Copy its sign-on URL and audience URI from the table for Okta.",
+          description: "Copy its sign-on URL and audience URI from the table into your identity provider.",
         });
       },
     },
@@ -46,9 +47,13 @@ export function RegisterApplicationSheet() {
     defaultValues: {
       certificate: "",
       domain: "",
+      emailAttribute: "",
       entityId: "",
       entryPoint: "",
+      firstNameAttribute: "",
+      lastNameAttribute: "",
       name: "",
+      nameAttribute: "",
       origin: "",
     },
     onSubmit: async ({ formApi, value }) => {
@@ -57,9 +62,13 @@ export function RegisterApplicationSheet() {
           data: {
             certificate: value.certificate.trim(),
             domain: value.domain.trim(),
+            emailAttribute: value.emailAttribute.trim(),
             entityId: value.entityId.trim(),
             entryPoint: value.entryPoint.trim(),
+            firstNameAttribute: value.firstNameAttribute.trim(),
+            lastNameAttribute: value.lastNameAttribute.trim(),
             name: value.name.trim(),
+            nameAttribute: value.nameAttribute.trim(),
             origin: value.origin.trim(),
           },
         });
@@ -158,7 +167,7 @@ export function RegisterApplicationSheet() {
             <FieldSeparator />
 
             <FieldSet>
-              <FieldLegend variant="label">Okta connection</FieldLegend>
+              <FieldLegend variant="label">Identity provider</FieldLegend>
 
               <form.Field name="domain">
                 {(field) => {
@@ -199,7 +208,7 @@ export function RegisterApplicationSheet() {
                         name={field.name}
                         onBlur={field.handleBlur}
                         onChange={event => field.handleChange(event.target.value)}
-                        placeholder="https://acme.okta.com/app/exk1.../sso/saml"
+                        placeholder="https://idp.acme.com/sso/saml"
                         value={field.state.value}
                       />
                       {isInvalid && <FieldError errors={field.state.meta.errors} />}
@@ -224,7 +233,7 @@ export function RegisterApplicationSheet() {
                         name={field.name}
                         onBlur={field.handleBlur}
                         onChange={event => field.handleChange(event.target.value)}
-                        placeholder="http://www.okta.com/exk1..."
+                        placeholder="https://idp.acme.com/entity-id"
                         value={field.state.value}
                       />
                       {isInvalid && <FieldError errors={field.state.meta.errors} />}
@@ -259,6 +268,84 @@ export function RegisterApplicationSheet() {
                 }}
               </form.Field>
 
+            </FieldSet>
+
+            <FieldSeparator />
+
+            <FieldSet>
+              <FieldLegend variant="label">Attribute mapping</FieldLegend>
+              <FieldDescription>
+                Optional. Leave blank unless your identity provider sends assertion
+                attributes under different names. Email falls back to the NameID.
+              </FieldDescription>
+
+              <form.Field name="emailAttribute">
+                {field => (
+                  <Field>
+                    <FieldLabel htmlFor={field.name}>Email attribute</FieldLabel>
+                    <Input
+                      autoComplete="off"
+                      id={field.name}
+                      name={field.name}
+                      onBlur={field.handleBlur}
+                      onChange={event => field.handleChange(event.target.value)}
+                      placeholder="email"
+                      value={field.state.value}
+                    />
+                  </Field>
+                )}
+              </form.Field>
+
+              <form.Field name="nameAttribute">
+                {field => (
+                  <Field>
+                    <FieldLabel htmlFor={field.name}>Display name attribute</FieldLabel>
+                    <Input
+                      autoComplete="off"
+                      id={field.name}
+                      name={field.name}
+                      onBlur={field.handleBlur}
+                      onChange={event => field.handleChange(event.target.value)}
+                      placeholder="displayName"
+                      value={field.state.value}
+                    />
+                  </Field>
+                )}
+              </form.Field>
+
+              <form.Field name="firstNameAttribute">
+                {field => (
+                  <Field>
+                    <FieldLabel htmlFor={field.name}>First name attribute</FieldLabel>
+                    <Input
+                      autoComplete="off"
+                      id={field.name}
+                      name={field.name}
+                      onBlur={field.handleBlur}
+                      onChange={event => field.handleChange(event.target.value)}
+                      placeholder="givenName"
+                      value={field.state.value}
+                    />
+                  </Field>
+                )}
+              </form.Field>
+
+              <form.Field name="lastNameAttribute">
+                {field => (
+                  <Field>
+                    <FieldLabel htmlFor={field.name}>Last name attribute</FieldLabel>
+                    <Input
+                      autoComplete="off"
+                      id={field.name}
+                      name={field.name}
+                      onBlur={field.handleBlur}
+                      onChange={event => field.handleChange(event.target.value)}
+                      placeholder="surname"
+                      value={field.state.value}
+                    />
+                  </Field>
+                )}
+              </form.Field>
             </FieldSet>
           </FieldGroup>
         </form>

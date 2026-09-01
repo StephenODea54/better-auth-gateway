@@ -46,7 +46,7 @@ export function DeleteApplicationDialog({ application, onOpenChange, open }: Del
             ?
           </AlertDialogTitle>
           <AlertDialogDescription>
-            This removes the application, its members and its Okta connection. Anyone signing in
+            This removes the application, its members and its identity provider connection. Anyone signing in
             through it will be turned away. This cannot be undone.
           </AlertDialogDescription>
         </AlertDialogHeader>

@@ -8,6 +8,7 @@ import type { MutationConfig } from "@/lib/react-query.ts";
 import { env } from "@/config/env.ts";
 import { slugify } from "@/features/applications/lib/slugify.ts";
 import { auth } from "@/features/auth/clients/server-client.ts";
+import { buildSamlMapping } from "@/features/auth/lib/saml-mapping.ts";
 import { isSuperAdmin } from "@/features/auth/lib/super-admin.ts";
 import { setEvent, setEventError } from "@/lib/wide-event.ts";
 
@@ -16,12 +17,16 @@ import { listApplicationsQueryOptions } from "./list-applications.ts";
 export const registerApplicationInputSchema = z.object({
   certificate: z.string().min(1, "Required"),
   domain: z.string().min(1, "Required"),
+  emailAttribute: z.string(),
   entityId: z.string().min(1, "Required"),
   entryPoint: z.url("Required"),
+  firstNameAttribute: z.string(),
+  lastNameAttribute: z.string(),
   name: z
     .string()
     .min(1, "Required")
     .refine(value => slugify(value).length > 0, "Use at least one letter or number."),
+  nameAttribute: z.string(),
   origin: z.url("Enter a full URL, for example https://billing.acme.com."),
 });
 
@@ -75,7 +80,12 @@ export const registerApplication = createServerFn({ method: "POST" })
             entryPoint: data.entryPoint,
             identifierFormat: "urn:oasis:names:tc:SAML:1.1:nameid-format:emailAddress",
             idpMetadata: { entityID: data.entityId },
-            mapping: { email: "email", name: "firstName" },
+            mapping: buildSamlMapping({
+              email: data.emailAttribute,
+              firstName: data.firstNameAttribute,
+              lastName: data.lastNameAttribute,
+              name: data.nameAttribute,
+            }),
             wantAssertionsSigned: true,
           },
         },

@@ -9,6 +9,7 @@ import type { MutationConfig } from "@/lib/react-query.ts";
 import { db } from "@/db/clients/db-client.ts";
 import { ssoProvider } from "@/db/schema/index.ts";
 import { auth } from "@/features/auth/clients/server-client.ts";
+import { buildSamlMapping } from "@/features/auth/lib/saml-mapping.ts";
 import { setEvent, setEventError } from "@/lib/wide-event.ts";
 
 import { listApplicationsQueryOptions } from "./list-applications.ts";
@@ -16,10 +17,14 @@ import { listApplicationsQueryOptions } from "./list-applications.ts";
 export const updateApplicationInputSchema = z.object({
   certificate: z.string().min(1, "Required"),
   domain: z.string().min(1, "Required"),
+  emailAttribute: z.string(),
   entityId: z.string().min(1, "Required"),
   entryPoint: z.url("Required"),
+  firstNameAttribute: z.string(),
   id: z.string().min(1),
+  lastNameAttribute: z.string(),
   name: z.string().min(1, "Required"),
+  nameAttribute: z.string(),
   origin: z.url("Enter a full URL, for example https://billing.acme.com."),
 });
 
@@ -68,6 +73,12 @@ export const updateApplication = createServerFn({ method: "POST" })
             cert: data.certificate,
             entryPoint: data.entryPoint,
             idpMetadata: { entityID: data.entityId },
+            mapping: buildSamlMapping({
+              email: data.emailAttribute,
+              firstName: data.firstNameAttribute,
+              lastName: data.lastNameAttribute,
+              name: data.nameAttribute,
+            }),
           },
         },
         headers,

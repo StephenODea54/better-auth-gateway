@@ -5,18 +5,18 @@ import { useMutation } from "@tanstack/react-query";
 import { authClient } from "@/features/auth/clients/web-client.ts";
 
 interface UseSignInOptions {
-  mutationConfig?: Omit<UseMutationOptions<void, Error>, "mutationFn">;
+  mutationConfig?: Omit<UseMutationOptions<void, Error, string>, "mutationFn">;
 }
 
-export async function signIn() {
+export async function signIn(providerId: string) {
   const { error } = await authClient.signIn.sso({
     callbackURL: "/dashboard",
-    providerId: "okta",
+    providerId,
     providerType: "saml",
   });
 
   if (error) {
-    throw new Error(error.message ?? "Unable to reach Okta. Please try again.");
+    throw new Error(error.message ?? "Unable to reach your identity provider. Please try again.");
   }
 }
 

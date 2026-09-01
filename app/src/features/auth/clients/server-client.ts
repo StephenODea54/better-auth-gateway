@@ -8,6 +8,7 @@ import { tanstackStartCookies } from "better-auth/tanstack-start";
 import { env } from "@/config/env.ts";
 import { db } from "@/db/clients/db-client.ts";
 import { ac, roles } from "@/features/auth/lib/access-control.ts";
+import { buildSamlMapping } from "@/features/auth/lib/saml-mapping.ts";
 import {
   enrollSuperAdmins,
   isFirstUser,
@@ -16,8 +17,6 @@ import {
   syncSuperAdminMemberships,
 } from "@/features/auth/lib/super-admin.ts";
 import { setEvent } from "@/lib/wide-event.ts";
-
-const SSO_PROVIDER_ID = "okta";
 
 export const auth = betterAuth({
   baseURL: env.BETTER_AUTH_URL,
@@ -117,14 +116,19 @@ export const auth = betterAuth({
     sso({
       defaultSSO: [{
         domain: env.SSO_EMAIL_DOMAIN,
-        providerId: SSO_PROVIDER_ID,
+        providerId: env.SSO_PROVIDER_ID,
         samlConfig: {
           cert: env.SSO_IDP_CERT,
           entryPoint: env.SSO_IDP_ENTRY_POINT,
           identifierFormat: "urn:oasis:names:tc:SAML:1.1:nameid-format:emailAddress",
           idpMetadata: { entityID: env.SSO_IDP_ENTITY_ID },
-          issuer: `${env.BETTER_AUTH_URL}/saml/sp/${SSO_PROVIDER_ID}`,
-          mapping: { email: "email", name: "firstName" },
+          issuer: `${env.BETTER_AUTH_URL}/saml/sp/${env.SSO_PROVIDER_ID}`,
+          mapping: buildSamlMapping({
+            email: env.SSO_ATTRIBUTE_EMAIL,
+            firstName: env.SSO_ATTRIBUTE_FIRST_NAME,
+            lastName: env.SSO_ATTRIBUTE_LAST_NAME,
+            name: env.SSO_ATTRIBUTE_NAME,
+          }),
           wantAssertionsSigned: true,
         },
       }],
