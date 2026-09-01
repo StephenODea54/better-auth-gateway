@@ -1,6 +1,7 @@
 import { EllipsisVerticalIcon, PencilIcon, Trash2Icon } from "lucide-react";
 import { useState } from "react";
 
+import type { Access } from "@/features/access/api/get-access.ts";
 import type { Resource } from "@/features/access/api/list-resources.ts";
 
 import { Button } from "@/components/ui/button.tsx";
@@ -14,11 +15,12 @@ import { DeleteResourceDialog } from "@/features/access/components/delete-resour
 import { ResourceSheet } from "@/features/access/components/resource-sheet.tsx";
 
 interface ResourceActionsProps {
+  access: Access;
   organizationId: string;
   resource: Resource;
 }
 
-export function ResourceActions({ organizationId, resource }: ResourceActionsProps) {
+export function ResourceActions({ access, organizationId, resource }: ResourceActionsProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
 
@@ -33,14 +35,18 @@ export function ResourceActions({ organizationId, resource }: ResourceActionsPro
         </DropdownMenuTrigger>
 
         <DropdownMenuContent align="end">
-          <DropdownMenuItem onSelect={() => setIsEditing(true)}>
-            <PencilIcon />
-            Edit
-          </DropdownMenuItem>
-          <DropdownMenuItem onSelect={() => setIsDeleting(true)} variant="destructive">
-            <Trash2Icon />
-            Delete
-          </DropdownMenuItem>
+          {access.canCreate && (
+            <DropdownMenuItem onSelect={() => setIsEditing(true)}>
+              <PencilIcon />
+              Edit
+            </DropdownMenuItem>
+          )}
+          {access.canDelete && (
+            <DropdownMenuItem onSelect={() => setIsDeleting(true)} variant="destructive">
+              <Trash2Icon />
+              Delete
+            </DropdownMenuItem>
+          )}
         </DropdownMenuContent>
       </DropdownMenu>
 

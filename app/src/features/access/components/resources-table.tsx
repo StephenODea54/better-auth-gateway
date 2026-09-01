@@ -45,6 +45,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table.tsx";
+import { useAccess } from "@/features/access/api/get-access.ts";
 import { useResources } from "@/features/access/api/list-resources.ts";
 import { ResourceActions } from "@/features/access/components/resource-actions.tsx";
 
@@ -61,6 +62,7 @@ interface ResourcesTableProps {
 
 export function ResourcesTable({ organizationId }: ResourcesTableProps) {
   const { data: resources, error, isError, isPending, refetch } = useResources({ organizationId });
+  const { data: access } = useAccess({ organizationId });
 
   const columns = useMemo(() => columnHelper.columns([
     columnHelper.accessor("key", {
@@ -83,14 +85,20 @@ export function ResourcesTable({ organizationId }: ResourcesTableProps) {
       enableSorting: false,
       header: "Actions",
     }),
-    columnHelper.display({
-      cell: info => (
-        <ResourceActions organizationId={organizationId} resource={info.row.original} />
-      ),
-      header: () => <span className="sr-only">Actions</span>,
-      id: "rowActions",
-    }),
-  ]), [organizationId]);
+    ...access && (access.canCreate || access.canDelete)
+      ? [columnHelper.display({
+          cell: info => (
+            <ResourceActions
+              access={access}
+              organizationId={organizationId}
+              resource={info.row.original}
+            />
+          ),
+          header: () => <span className="sr-only">Actions</span>,
+          id: "rowActions",
+        })]
+      : [],
+  ]), [access, organizationId]);
 
   const table = useTable({
     columns,
@@ -147,9 +155,11 @@ export function ResourcesTable({ organizationId }: ResourcesTableProps) {
             <LockKeyholeIcon />
           </EmptyMedia>
           <EmptyTitle>No resources yet</EmptyTitle>
-          <EmptyDescription>
-            Create one to get started
-          </EmptyDescription>
+          {access?.canCreate && (
+            <EmptyDescription>
+              Create one to get started
+            </EmptyDescription>
+          )}
         </EmptyHeader>
       </Empty>
     );

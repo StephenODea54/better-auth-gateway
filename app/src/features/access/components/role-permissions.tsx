@@ -2,6 +2,7 @@ import { Loader2Icon, Trash2Icon } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 
+import type { Access } from "@/features/access/api/get-access.ts";
 import type { Role } from "@/features/access/api/list-roles.ts";
 import type { VocabularyGroup } from "@/features/access/lib/permissions.ts";
 
@@ -12,6 +13,7 @@ import { DeleteRoleDialog } from "@/features/access/components/delete-role-dialo
 import { toPairs } from "@/features/access/lib/permissions.ts";
 
 interface RolePermissionsProps {
+  access: Access;
   draft: Record<string, string[]> | undefined;
   onChange: (permission: Record<string, string[]>) => void;
   onDeleted: () => void;
@@ -23,6 +25,7 @@ interface RolePermissionsProps {
 }
 
 export function RolePermissions({
+  access,
   draft,
   onChange,
   onDeleted,
@@ -79,39 +82,45 @@ export function RolePermissions({
 
   return (
     <div className="flex min-w-0 flex-1 flex-col overflow-y-auto">
-      {!role.builtIn && (
+      {!role.builtIn && (access.canUpdate || access.canDelete) && (
         <div className="sticky top-0 z-10 flex items-center justify-end gap-2 border-b bg-background px-4 py-3">
           <span className="mr-auto text-sm text-muted-foreground">
             {changes === 0
               ? "No unsaved changes"
               : `${changes} unsaved ${changes === 1 ? "change" : "changes"}`}
           </span>
-          <Button
-            disabled={changes === 0 || updateRole.isPending}
-            onClick={onDiscard}
-            variant="outline"
-          >
-            Discard
-          </Button>
-          <Button
-            disabled={changes === 0 || updateRole.isPending}
-            onClick={() => updateRole.mutate({
-              data: { organizationId, permission, role: role.name },
-            })}
-          >
-            {updateRole.isPending
-              ? (
-                  <>
-                    <Loader2Icon className="animate-spin" />
-                    Saving…
-                  </>
-                )
-              : "Save changes"}
-          </Button>
-          <Button onClick={() => setIsDeleting(true)} size="icon" variant="ghost">
-            <Trash2Icon />
-            <span className="sr-only">{`Delete ${role.name}`}</span>
-          </Button>
+          {access.canUpdate && (
+            <>
+              <Button
+                disabled={changes === 0 || updateRole.isPending}
+                onClick={onDiscard}
+                variant="outline"
+              >
+                Discard
+              </Button>
+              <Button
+                disabled={changes === 0 || updateRole.isPending}
+                onClick={() => updateRole.mutate({
+                  data: { organizationId, permission, role: role.name },
+                })}
+              >
+                {updateRole.isPending
+                  ? (
+                      <>
+                        <Loader2Icon className="animate-spin" />
+                        Saving…
+                      </>
+                    )
+                  : "Save changes"}
+              </Button>
+            </>
+          )}
+          {access.canDelete && (
+            <Button onClick={() => setIsDeleting(true)} size="icon" variant="ghost">
+              <Trash2Icon />
+              <span className="sr-only">{`Delete ${role.name}`}</span>
+            </Button>
+          )}
         </div>
       )}
 
@@ -128,7 +137,7 @@ export function RolePermissions({
               <Switch
                 aria-label={`${group.key}:${action}`}
                 checked={granted.has(`${group.key}:${action}`)}
-                disabled={role.builtIn}
+                disabled={role.builtIn || !access.canUpdate}
                 onCheckedChange={() => toggle(group.key, action)}
               />
             </div>

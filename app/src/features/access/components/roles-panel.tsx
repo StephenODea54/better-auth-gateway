@@ -13,6 +13,7 @@ import {
   EmptyTitle,
 } from "@/components/ui/empty.tsx";
 import { Skeleton } from "@/components/ui/skeleton.tsx";
+import { useAccess } from "@/features/access/api/get-access.ts";
 import { useResources } from "@/features/access/api/list-resources.ts";
 import { useRoles } from "@/features/access/api/list-roles.ts";
 import { CreateRoleSheet } from "@/features/access/components/create-role-sheet.tsx";
@@ -28,6 +29,7 @@ interface RolesPanelProps {
 export function RolesPanel({ organizationId }: RolesPanelProps) {
   const rolesQuery = useRoles({ organizationId });
   const resourcesQuery = useResources({ organizationId });
+  const accessQuery = useAccess({ organizationId });
   const [selectedName, setSelectedName] = useState("");
   const [isCreating, setIsCreating] = useState(false);
   const [drafts, setDrafts] = useState<Record<string, Record<string, string[]>>>({});
@@ -62,7 +64,7 @@ export function RolesPanel({ organizationId }: RolesPanelProps) {
     return [...groups].map(([key, actions]) => ({ actions: [...actions].sort(), key }));
   }, [resources]);
 
-  if (rolesQuery.isPending || resourcesQuery.isPending) {
+  if (rolesQuery.isPending || resourcesQuery.isPending || accessQuery.isPending) {
     return (
       <div className="flex min-h-0 flex-1 gap-4">
         <Skeleton className="h-full w-72 rounded-xl" />
@@ -71,7 +73,7 @@ export function RolesPanel({ organizationId }: RolesPanelProps) {
     );
   }
 
-  if (rolesQuery.isError || resourcesQuery.isError) {
+  if (rolesQuery.isError || resourcesQuery.isError || accessQuery.isError) {
     return (
       <Empty className="flex-1 rounded-xl border">
         <EmptyHeader>
@@ -80,7 +82,7 @@ export function RolesPanel({ organizationId }: RolesPanelProps) {
           </EmptyMedia>
           <EmptyTitle>Could not load roles</EmptyTitle>
           <EmptyDescription>
-            {(rolesQuery.error ?? resourcesQuery.error)?.message}
+            {(rolesQuery.error ?? resourcesQuery.error ?? accessQuery.error)?.message}
           </EmptyDescription>
         </EmptyHeader>
         <EmptyContent>
@@ -88,6 +90,7 @@ export function RolesPanel({ organizationId }: RolesPanelProps) {
             onClick={() => {
               void rolesQuery.refetch();
               void resourcesQuery.refetch();
+              void accessQuery.refetch();
             }}
             variant="outline"
           >
@@ -100,6 +103,7 @@ export function RolesPanel({ organizationId }: RolesPanelProps) {
   }
 
   const roles = rolesQuery.data;
+  const access = accessQuery.data;
   const selected = roles.find(role => role.name === selectedName) ?? roles[0];
 
   return (
@@ -135,15 +139,18 @@ export function RolesPanel({ organizationId }: RolesPanelProps) {
           })}
         </div>
 
-        <div className="border-t p-2">
-          <Button className="w-full justify-start" onClick={() => setIsCreating(true)} variant="ghost">
-            <PlusIcon />
-            New role
-          </Button>
-        </div>
+        {access.canCreate && (
+          <div className="border-t p-2">
+            <Button className="w-full justify-start" onClick={() => setIsCreating(true)} variant="ghost">
+              <PlusIcon />
+              New role
+            </Button>
+          </div>
+        )}
       </div>
 
       <RolePermissions
+        access={access}
         draft={drafts[selected.name]}
         key={selected.name}
         onChange={permission => setDrafts(current => ({ ...current, [selected.name]: permission }))}

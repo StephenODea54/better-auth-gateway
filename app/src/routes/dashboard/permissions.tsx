@@ -19,6 +19,7 @@ import {
   SelectValue,
 } from "@/components/ui/select.tsx";
 import { Skeleton } from "@/components/ui/skeleton.tsx";
+import { useAccess } from "@/features/access/api/get-access.ts";
 import { ResourceSheet } from "@/features/access/components/resource-sheet.tsx";
 import { ResourcesTable } from "@/features/access/components/resources-table.tsx";
 import { useApplications } from "@/features/applications/api/list-applications.ts";
@@ -35,6 +36,8 @@ export function Permissions() {
 
   const organizationId = selectedId || applications?.[0]?.id || "";
 
+  const { data: access } = useAccess({ organizationId });
+
   return (
     <div className="flex flex-1 flex-col gap-4">
       <div className="flex items-start justify-between gap-4">
@@ -43,7 +46,7 @@ export function Permissions() {
           <p className="text-sm text-muted-foreground">Resources exposed by applications and the actions allowed on them.</p>
         </div>
 
-        {organizationId && (
+        {access?.canCreate && (
           <Button onClick={() => setIsAdding(true)}>
             <PlusIcon />
             Add Resource
