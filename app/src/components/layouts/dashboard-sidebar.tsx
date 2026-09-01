@@ -2,7 +2,6 @@ import { Link, useLoaderData, useLocation } from "@tanstack/react-router";
 import {
   AppWindowIcon,
   LockKeyholeIcon,
-  MailIcon,
   ShieldCheckIcon,
   ShieldIcon,
   UsersIcon,
@@ -50,7 +49,6 @@ const dashboardNavigation: DashboardNavigationSection[] = [
   {
     items: [
       { icon: UsersIcon, title: "Members", to: "/dashboard/members" },
-      { icon: MailIcon, title: "Invitations", to: "/dashboard/invitations" },
     ],
     title: "Directory",
   },
