@@ -157,7 +157,7 @@ export function MembersTable({ organizationId }: MembersTableProps) {
           </EmptyMedia>
           <EmptyTitle>No members yet</EmptyTitle>
           <EmptyDescription>
-            Anyone who signs in through this application's identity provider shows up here.
+            Add someone who has signed in to the gateway, and pick the roles they hold here.
           </EmptyDescription>
         </EmptyHeader>
       </Empty>

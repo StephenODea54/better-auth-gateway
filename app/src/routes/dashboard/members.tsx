@@ -18,6 +18,7 @@ import {
 } from "@/components/ui/select.tsx";
 import { Skeleton } from "@/components/ui/skeleton.tsx";
 import { useApplications } from "@/features/applications/api/list-applications.ts";
+import { AddMemberSheet } from "@/features/members/components/add-member-sheet.tsx";
 import { MembersTable } from "@/features/members/components/members-table.tsx";
 
 export const Route = createFileRoute("/dashboard/members")({
@@ -58,18 +59,22 @@ export function Members() {
 
       {applications && applications.length > 0 && (
         <>
-          <Select onValueChange={setSelectedId} value={organizationId}>
-            <SelectTrigger className="w-64">
-              <SelectValue placeholder="Select an application" />
-            </SelectTrigger>
-            <SelectContent>
-              {applications.map(application => (
-                <SelectItem key={application.id} value={application.id}>
-                  {application.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <Select onValueChange={setSelectedId} value={organizationId}>
+              <SelectTrigger className="w-64">
+                <SelectValue placeholder="Select an application" />
+              </SelectTrigger>
+              <SelectContent>
+                {applications.map(application => (
+                  <SelectItem key={application.id} value={application.id}>
+                    {application.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            <AddMemberSheet key={organizationId} organizationId={organizationId} />
+          </div>
 
           <MembersTable key={organizationId} organizationId={organizationId} />
         </>
