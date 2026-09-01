@@ -1,0 +1,13 @@
+.env
+.env.*
+!.env.example
+.git
+.husky
+.nitro
+.output
+.tanstack
+Dockerfile
+README.md
+dist
+node_modules
+*.log

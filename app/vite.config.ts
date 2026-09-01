@@ -4,6 +4,7 @@ import { devtools } from "@tanstack/devtools-vite";
 import { tanstackStart } from "@tanstack/react-start/plugin/vite";
 import viteReact, { reactCompilerPreset } from "@vitejs/plugin-react";
 import { nitro } from "nitro/vite";
+import process from "node:process";
 import { defineConfig } from "vite";
 
 const config = defineConfig({
@@ -16,6 +17,13 @@ const config = defineConfig({
     babel({ presets: [reactCompilerPreset()] }),
   ],
   resolve: { tsconfigPaths: true },
+  server: {
+    host: true,
+    port: 3000,
+    watch: process.env.VITE_USE_POLLING
+      ? { interval: 300, usePolling: true }
+      : undefined,
+  },
 });
 
 export default config;

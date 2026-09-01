@@ -1,6 +1,51 @@
 name: internal-better-auth-gateway
 
 services:
+  app:
+    build:
+      context: ./app
+      target: dev
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+      mock-idp:
+        condition: service_healthy
+    env_file:
+      - ./app/.env
+    environment:
+      POSTGRES_HOST: postgres
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./app:/app
+      - app-node-modules:/app/node_modules
+
+  migrate:
+    build:
+      context: ./app
+      target: dev
+    restart: "no"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    env_file:
+      - ./app/.env
+    environment:
+      POSTGRES_HOST: postgres
+    command:
+      - pnpm
+      - exec
+      - drizzle-kit
+      - migrate
+      - --config
+      - ./src/db/config/db-config.ts
+    volumes:
+      - ./app:/app
+      - app-node-modules:/app/node_modules
+
   postgres:
     image: postgres:17-alpine
     restart: unless-stopped
@@ -52,3 +97,4 @@ services:
 
 volumes:
   postgres-data:
+  app-node-modules:

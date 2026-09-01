@@ -1,21 +1,58 @@
 Welcome to your new TanStack Start app!
 
-@ Local setup
+## Local setup
 
-`docker compose up` mints the mock IdP's keypair itself. Run the same script on
-the host once to copy the certificate into `.env` as `SSO_IDP_CERT`; it is
-idempotent and reuses the keypair compose already made.
+`docker compose up` runs the whole stack -- app, Postgres and the mock IdP -- and
+mints the mock IdP's keypair itself. Run the same script on the host once to copy
+the certificate into `.env` as `SSO_IDP_CERT`; it is idempotent and reuses the
+keypair compose already made.
 
 ```bash
 cp .env.example .env   # then fill in BETTER_AUTH_SECRET
 docker compose -f ../compose.yaml up -d
 sh ../infra/mock-idp/gen-keys.sh
-pnpm db:migrate
-pnpm dev
+docker compose -f ../compose.yaml up -d app
 ```
 
 Sign in at `http://localhost:3000` with `Continue with Okta`. The mock IdP is at
 `http://localhost:4000` and vouches for any `@example.com` address.
+
+The `migrate` service applies migrations before the app starts, so there is no
+separate migrate step.
+
+The `app` service runs `vite dev` with `./app` bind-mounted over `/app`, so edits
+on the host hot reload without rebuilding the image. `node_modules` sits in a
+named volume so the container keeps its own Linux-native binaries instead of the
+host's macOS ones.
+
+That volume is populated once when it is created, so after changing dependencies
+reset it and rebuild:
+
+```bash
+docker compose -f ../compose.yaml rm -sf app
+docker volume rm internal-better-auth-gateway_app-node-modules
+docker compose -f ../compose.yaml up -d --build app
+```
+
+If edits stop triggering reloads, set `VITE_USE_POLLING=1` on the `app` service to
+swap the watcher over to polling.
+
+To run the app on the host instead, stop the `app` service so it frees port 3000,
+then use `pnpm db:migrate` and `pnpm dev` with `POSTGRES_HOST=localhost`.
+
+## Production image
+
+Deployment does not use compose. The `runtime` stage of `Dockerfile` is the image
+to push to ECR: it carries only the Nitro build output and runs as the non-root
+`node` user.
+
+```bash
+docker build --target runtime -t auth-gateway ./app
+```
+
+Nothing is baked in at build time -- every value in `src/config/env.ts` is read
+from the environment when the server boots, which is what the ECS task definition
+supplies.
 
 @ Getting Started
 
