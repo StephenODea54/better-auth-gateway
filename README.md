@@ -7,8 +7,8 @@ its own.
 
 ## Why this exists
 
-Internal tooling multiplies. You end up with a dozen small serverless apps -- a
-billing dashboard here, an ops console there -- and every one of them needs to know
+Internal tooling multiplies. You end up with a dozen small serverless apps (a
+billing dashboard here, an ops console there), and every one of them needs to know
 who is calling and what they are allowed to do.
 
 The usual answer is to give each app its own auth infrastructure: a user pool, a
@@ -79,27 +79,27 @@ know what your role names mean.
 
 A dashboard with five pages:
 
-- **Applications** -- register an app, record its origin, connect its IdP.
-- **Members** -- who can reach which application, and in what roles.
-- **Roles** -- roles defined per application, at runtime, through the UI.
-- **Permissions** -- the resources and actions each application recognises, also
+- **Applications.** Register an app, record its origin, connect its IdP.
+- **Members.** Who can reach which application, and in what roles.
+- **Roles.** Roles defined per application, at runtime, through the UI.
+- **Permissions.** The resources and actions each application recognises, also
   defined at runtime. This is the part that is not stock Better Auth.
-- **Activity** -- one wide event per request, retained for ninety days.
+- **Activity.** One wide event per request, retained for ninety days.
 
-Most of the behaviour underneath is [Better Auth](https://www.better-auth.com) --
+Most of the behaviour underneath is [Better Auth](https://www.better-auth.com);
 its organization, admin, JWT and SSO plugins do the heavy lifting. The custom work
 is the dynamic resource and permission model, the token endpoint, and the dashboard.
 
 ## Requirements
 
 - A **Postgres database**. The gateway does not ship one; you point it at yours.
-- A **SAML 2.0 identity provider** -- Okta, Entra ID, Google Workspace, OneLogin,
+- A **SAML 2.0 identity provider**. Okta, Entra ID, Google Workspace, OneLogin,
   JumpCloud, Keycloak. Nothing here is specific to one vendor.
 - Somewhere to run **one container**.
 
 ## Running it
 
-The published image is the gateway itself -- a Node server built by the `runtime`
+The published image is the gateway itself, a Node server built by the `runtime`
 stage of [app/Dockerfile](app/Dockerfile).
 
 ```bash
@@ -159,8 +159,8 @@ The gateway reads a person's email from the SAML `NameID`, which every IdP sends
 sign-in works out of the box. Display names are less consistent: it looks for
 `givenName` and `surname`, then `displayName`, and falls back to the email address.
 
-If your IdP names those attributes differently -- Entra ID sends full claim URIs, for
-example -- override them with `SSO_ATTRIBUTE_EMAIL`, `SSO_ATTRIBUTE_NAME`,
+If your IdP names those attributes differently (Entra ID sends full claim URIs, for
+example), override them with `SSO_ATTRIBUTE_EMAIL`, `SSO_ATTRIBUTE_NAME`,
 `SSO_ATTRIBUTE_FIRST_NAME` and `SSO_ATTRIBUTE_LAST_NAME`. Each registered application
 has the same four fields on its own form, under **Attribute mapping**.
 
@@ -198,14 +198,14 @@ if (!payload.permissions?.invoices?.includes("read")) {
 }
 ```
 
-That is the whole integration. No SDK, no shared secret, no auth tables in your app.
+That is the whole integration. No auth tables in your app.
 
 ## Local development
 
 [app/README.md](app/README.md) covers the development setup: `compose.yaml` runs the
 gateway, a throwaway Postgres and a mock SAML IdP so you can exercise the full
 sign-in flow without touching a real identity provider. **Compose is for local
-development only** -- it is not a deployment artifact, and the Postgres in it is not
+development only.** It is not a deployment artifact, and the Postgres in it is not
 meant to hold anything you care about.
 
 ## Scope
@@ -219,4 +219,4 @@ Things this deliberately does not do:
 
 ## License
 
-Not yet chosen.
+[MIT](LICENSE).

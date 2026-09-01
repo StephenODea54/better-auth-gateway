@@ -47,13 +47,13 @@ then use `pnpm db:migrate` and `pnpm dev` with `POSTGRES_HOST=localhost`.
 
 ## Layout
 
-- `src/routes` -- file-based routes. `api/auth/$.ts` mounts Better Auth;
+- `src/routes`: file-based routes. `api/auth/$.ts` mounts Better Auth;
   `api/token.ts` is the token exchange apps call.
-- `src/features/*` -- one folder per area, each with `api` (server functions and
+- `src/features/*`: one folder per area, each with `api` (server functions and
   their React Query hooks), `components` and `lib`.
-- `src/db` -- Drizzle schema, migrations and config. `auth-schema.ts` is generated
+- `src/db`: Drizzle schema, migrations and config. `auth-schema.ts` is generated
   by `pnpm auth:generate`; do not edit it by hand.
-- `src/config/env.ts` -- every environment variable, validated at boot.
+- `src/config/env.ts`: every environment variable, validated at boot.
 
 ## Commands
 
@@ -61,6 +61,8 @@ then use `pnpm db:migrate` and `pnpm dev` with `POSTGRES_HOST=localhost`.
 pnpm dev              # vite dev server on :3000
 pnpm build            # nitro build into .output
 pnpm lint             # eslint
+pnpm typecheck        # tsc --noEmit
+pnpm test             # vitest run
 pnpm db:generate      # generate a migration from schema changes
 pnpm db:migrate       # apply migrations
 pnpm db:studio        # drizzle studio
@@ -76,5 +78,5 @@ publish: it carries only the Nitro build output and runs as the non-root `node` 
 docker build --target runtime -t auth-gateway ./app
 ```
 
-Nothing is baked in at build time -- every value in `src/config/env.ts` is read from
+Nothing is baked in at build time. Every value in `src/config/env.ts` is read from
 the environment when the server boots.
