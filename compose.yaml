@@ -1,4 +1,4 @@
-name: internal-better-auth-gateway
+name: better-auth-gateway
 
 services:
   app:

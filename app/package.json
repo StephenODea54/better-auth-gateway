@@ -1,5 +1,5 @@
 {
-  "name": "@internal-better-auth-gateway/app",
+  "name": "better-auth-gateway",
   "type": "module",
   "private": true,
   "scripts": {
