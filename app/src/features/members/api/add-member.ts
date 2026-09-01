@@ -11,6 +11,7 @@ import { db } from "@/db/clients/db-client.ts";
 import { user } from "@/db/schema/index.ts";
 import { auth } from "@/features/auth/clients/server-client.ts";
 import { SUPER_ADMIN_MEMBER_MARKER } from "@/features/auth/lib/super-admin.ts";
+import { setEventError } from "@/lib/wide-event.ts";
 
 import { listMembersQueryOptions } from "./list-members.ts";
 
@@ -82,7 +83,7 @@ export const addMember = createServerFn({ method: "POST" })
       });
     }
     catch (error) {
-      console.error(error);
+      setEventError(error);
 
       if (error instanceof APIError) {
         throw new Error(error.message);

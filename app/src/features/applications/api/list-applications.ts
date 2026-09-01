@@ -10,6 +10,7 @@ import { env } from "@/config/env.ts";
 import { db } from "@/db/clients/db-client.ts";
 import { member, organization, ssoProvider } from "@/db/schema/index.ts";
 import { auth } from "@/features/auth/clients/server-client.ts";
+import { setEventError } from "@/lib/wide-event.ts";
 
 export const listApplications = createServerFn().handler(async () => {
   const session = await auth.api.getSession({ headers: getRequest().headers });
@@ -61,7 +62,7 @@ export const listApplications = createServerFn().handler(async () => {
     });
   }
   catch (error) {
-    console.error(error);
+    setEventError(error);
     throw new Error("Error loading applications");
   }
 });

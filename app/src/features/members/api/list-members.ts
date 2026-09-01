@@ -12,6 +12,7 @@ import {
   listSuperAdminMemberIds,
   SUPER_ADMIN_MEMBER_MARKER,
 } from "@/features/auth/lib/super-admin.ts";
+import { setEventError } from "@/lib/wide-event.ts";
 
 export const listMembers = createServerFn()
   .validator(z.object({ organizationId: z.string().min(1) }))
@@ -50,7 +51,7 @@ export const listMembers = createServerFn()
         .sort((a, b) => a.name.localeCompare(b.name));
     }
     catch (error) {
-      console.error(error);
+      setEventError(error);
 
       if (error instanceof APIError) {
         throw new Error(error.message);

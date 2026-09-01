@@ -9,6 +9,7 @@ import type { MutationConfig } from "@/lib/react-query.ts";
 import { db } from "@/db/clients/db-client.ts";
 import { ssoProvider } from "@/db/schema/index.ts";
 import { auth } from "@/features/auth/clients/server-client.ts";
+import { setEventError } from "@/lib/wide-event.ts";
 
 import { listApplicationsQueryOptions } from "./list-applications.ts";
 
@@ -52,7 +53,7 @@ export const updateApplication = createServerFn({ method: "POST" })
       });
     }
     catch (error) {
-      console.error(error);
+      setEventError(error);
       throw new Error("Could not update the application.");
     }
 
@@ -71,7 +72,7 @@ export const updateApplication = createServerFn({ method: "POST" })
       });
     }
     catch (error) {
-      console.error(error);
+      setEventError(error);
       throw new Error("Could not update this application's identity provider.");
     }
 

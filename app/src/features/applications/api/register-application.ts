@@ -9,6 +9,7 @@ import { env } from "@/config/env.ts";
 import { slugify } from "@/features/applications/lib/slugify.ts";
 import { auth } from "@/features/auth/clients/server-client.ts";
 import { isSuperAdmin } from "@/features/auth/lib/super-admin.ts";
+import { setEventError } from "@/lib/wide-event.ts";
 
 import { listApplicationsQueryOptions } from "./list-applications.ts";
 
@@ -52,7 +53,7 @@ export const registerApplication = createServerFn({ method: "POST" })
       });
     }
     catch (error) {
-      console.error(error);
+      setEventError(error);
       throw new Error("Could not create the application.");
     }
 
@@ -85,7 +86,7 @@ export const registerApplication = createServerFn({ method: "POST" })
         headers,
       });
 
-      console.error(error);
+      setEventError(error);
       throw new Error("Could not connect this application's identity provider. Try a different name.");
     }
 

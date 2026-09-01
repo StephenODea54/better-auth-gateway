@@ -15,6 +15,7 @@ import {
   SUPER_ADMIN_ROLE,
   syncSuperAdminMemberships,
 } from "@/features/auth/lib/super-admin.ts";
+import { setEvent } from "@/lib/wide-event.ts";
 
 const SSO_PROVIDER_ID = "okta";
 
@@ -54,6 +55,25 @@ export const auth = betterAuth({
   },
   hooks: {
     after: createAuthMiddleware(async (ctx) => {
+      const returned = ctx.context.returned as Record<string, any> | undefined;
+
+      if (ctx.path === "/get-session" && returned?.user) {
+        setEvent({
+          "session.id": returned.session?.id,
+          "user.email": returned.user.email,
+          "user.id": returned.user.id,
+          "user.role": returned.user.role,
+        });
+      }
+
+      if (ctx.path === "/organization/has-permission") {
+        setEvent({
+          "authz.allowed": returned?.success ?? false,
+          "authz.permissions": JSON.stringify(ctx.body?.permissions),
+          "organization.id": ctx.body?.organizationId,
+        });
+      }
+
       if (ctx.path !== "/admin/set-role") {
         return;
       }

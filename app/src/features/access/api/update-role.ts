@@ -10,6 +10,7 @@ import { db } from "@/db/clients/db-client.ts";
 import { organizationRole } from "@/db/schema/index.ts";
 import { auth } from "@/features/auth/clients/server-client.ts";
 import { ac, roles } from "@/features/auth/lib/access-control.ts";
+import { setEventError } from "@/lib/wide-event.ts";
 
 import { listRolesQueryOptions } from "./list-roles.ts";
 
@@ -89,7 +90,7 @@ export const updateRole = createServerFn({ method: "POST" })
       });
     }
     catch (error) {
-      console.error(error);
+      setEventError(error);
       throw new Error("Could not save this role.");
     }
 

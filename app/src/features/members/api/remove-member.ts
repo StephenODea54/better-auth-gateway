@@ -8,6 +8,7 @@ import type { MutationConfig } from "@/lib/react-query.ts";
 
 import { auth } from "@/features/auth/clients/server-client.ts";
 import { isSuperAdminMembership } from "@/features/auth/lib/super-admin.ts";
+import { setEventError } from "@/lib/wide-event.ts";
 
 import { listMembersQueryOptions } from "./list-members.ts";
 
@@ -34,7 +35,7 @@ export const removeMember = createServerFn({ method: "POST" })
       });
     }
     catch (error) {
-      console.error(error);
+      setEventError(error);
 
       if (error instanceof APIError) {
         throw new Error(error.message);

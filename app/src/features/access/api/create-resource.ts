@@ -9,6 +9,7 @@ import type { MutationConfig } from "@/lib/react-query.ts";
 import { db } from "@/db/clients/db-client.ts";
 import { organizationRole } from "@/db/schema/index.ts";
 import { auth } from "@/features/auth/clients/server-client.ts";
+import { setEventError } from "@/lib/wide-event.ts";
 
 import { listResourcesQueryOptions } from "./list-resources.ts";
 
@@ -120,7 +121,7 @@ export const createResource = createServerFn({ method: "POST" })
       });
     }
     catch (error) {
-      console.error(error);
+      setEventError(error);
       throw new Error("Could not save this resource.");
     }
 

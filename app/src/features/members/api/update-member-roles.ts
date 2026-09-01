@@ -11,6 +11,7 @@ import {
   isSuperAdminMembership,
   SUPER_ADMIN_MEMBER_MARKER,
 } from "@/features/auth/lib/super-admin.ts";
+import { setEventError } from "@/lib/wide-event.ts";
 
 import { listMembersQueryOptions } from "./list-members.ts";
 
@@ -45,7 +46,7 @@ export const updateMemberRoles = createServerFn({ method: "POST" })
       });
     }
     catch (error) {
-      console.error(error);
+      setEventError(error);
 
       if (error instanceof APIError) {
         throw new Error(error.message);
