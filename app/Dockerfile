@@ -24,6 +24,7 @@ ENV HOST=0.0.0.0
 ENV PORT=3000
 WORKDIR /app
 COPY --from=build --chown=node:node /app/.output ./.output
+COPY --chown=node:node docker-entrypoint.sh ./
 USER node
 EXPOSE 3000
-CMD ["node", ".output/server/index.mjs"]
+ENTRYPOINT ["./docker-entrypoint.sh"]

@@ -37,11 +37,7 @@ services:
       POSTGRES_HOST: postgres
     command:
       - pnpm
-      - exec
-      - drizzle-kit
-      - migrate
-      - --config
-      - ./src/db/config/db-config.ts
+      - db:migrate
     volumes:
       - ./app:/app
       - app-node-modules:/app/node_modules
