@@ -116,12 +116,26 @@ Nothing is baked in at build time. Every value in
 [app/src/config/env.ts](app/src/config/env.ts) is read from the environment at boot,
 so the same image runs in every environment.
 
-Migrations are not run by the image. Apply them from a checkout before you start a
-new version:
+### Migrations
+
+The image carries its own migrations and applies any that are pending when the
+container starts, before the server begins listening. Starting several replicas at
+once is safe: each runner takes a Postgres advisory lock, so one applies the
+migrations and the rest wait, then find nothing left to do. If a migration fails the
+container exits non-zero and the server never starts, so a bad upgrade shows up in
+your orchestrator rather than at the first request.
+
+To run migrations as a separate step instead (a Kubernetes Job, a one-off ECS task,
+or because the server's database user may not alter the schema), set
+`MIGRATE_ON_BOOT=false` on the server and run the same image with `migrate`:
 
 ```bash
-pnpm --dir app db:migrate
+docker run --rm --env-file .env ghcr.io/stephenodea54/better-auth-gateway:latest migrate
 ```
+
+The `migrate` command reads only the `POSTGRES_*` variables. Use the same tag for
+both steps: the migrations live inside the image, so the version you migrate with
+is the version you run.
 
 The first person to sign in becomes the gateway super admin. Super admins are the
 only people who can register applications, and they are enrolled into every
@@ -146,6 +160,7 @@ application automatically.
 | `SSO_PROVIDER_NAME` | no | What the sign-in button calls your IdP. Defaults to `SSO`. |
 | `SSO_PROVIDER_ID` | no | Internal key for the gateway's own provider. Defaults to `gateway`. |
 | `TOKEN_LIFETIME` | no | Lifetime of issued tokens. Defaults to `15m`. |
+| `MIGRATE_ON_BOOT` | no | Apply pending migrations when the container starts. Defaults to `true`. |
 | `NODE_ENV` | no | Defaults to `development`. |
 
 `SSO_PROVIDER_ID` is stored in the database, so changing it on a running deployment

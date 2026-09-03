@@ -52,7 +52,9 @@ then use `pnpm db:migrate` and `pnpm dev` with `POSTGRES_HOST=localhost`.
 - `src/features/*`: one folder per area, each with `api` (server functions and
   their React Query hooks), `components` and `lib`.
 - `src/db`: Drizzle schema, migrations and config. `auth-schema.ts` is generated
-  by `pnpm auth:generate`; do not edit it by hand.
+  by `pnpm auth:generate`; do not edit it by hand. `migrate.ts` applies migrations;
+  `pnpm db:migrate`, the compose `migrate` service and the published image all run
+  it.
 - `src/config/env.ts`: every environment variable, validated at boot.
 
 ## Commands
