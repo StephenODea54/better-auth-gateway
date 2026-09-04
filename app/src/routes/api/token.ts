@@ -7,16 +7,9 @@ import { member, organization, organizationRole } from "@/db/schema/index.ts";
 import { mergePermissions, parsePermission } from "@/features/access/lib/permissions.ts";
 import { auth } from "@/features/auth/clients/server-client.ts";
 import { splitRoles, SUPER_ADMIN_MEMBER_MARKER } from "@/features/auth/lib/super-admin.ts";
+import { corsHeaders } from "@/lib/cors.ts";
 
-function corsHeaders(origin: string) {
-  return {
-    "access-control-allow-credentials": "true",
-    "access-control-allow-headers": "content-type",
-    "access-control-allow-methods": "GET, OPTIONS",
-    "access-control-allow-origin": origin,
-    "vary": "Origin",
-  };
-}
+const METHODS = "GET, OPTIONS";
 
 async function findApplication(slug: string) {
   const [application] = await db
@@ -31,7 +24,7 @@ async function findApplication(slug: string) {
 function problem(status: number, message: string, origin?: string) {
   return Response.json(
     { error: message },
-    { headers: origin ? corsHeaders(origin) : undefined, status },
+    { headers: origin ? corsHeaders(origin, METHODS) : undefined, status },
   );
 }
 
@@ -105,7 +98,7 @@ export const Route = createFileRoute("/api/token")({
           },
         });
 
-        return Response.json({ token }, { headers: corsHeaders(allowed) });
+        return Response.json({ token }, { headers: corsHeaders(allowed, METHODS) });
       },
       OPTIONS: async ({ request }) => {
         const slug = new URL(request.url).searchParams.get("application");
@@ -116,7 +109,7 @@ export const Route = createFileRoute("/api/token")({
           return new Response(null, { status: 403 });
         }
 
-        return new Response(null, { headers: corsHeaders(application.origin), status: 204 });
+        return new Response(null, { headers: corsHeaders(application.origin, METHODS), status: 204 });
       },
     },
   },
