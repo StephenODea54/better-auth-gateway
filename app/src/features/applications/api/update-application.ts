@@ -40,6 +40,7 @@ export const updateApplication = createServerFn({ method: "POST" })
     await requireOrgPermission(data.id, { organization: ["update"] }, "You do not have permission to update this application.");
 
     const headers = getRequest().headers;
+    const origin = new URL(data.origin).origin;
 
     const [provider] = await db
       .select({ providerId: ssoProvider.providerId })
@@ -56,7 +57,7 @@ export const updateApplication = createServerFn({ method: "POST" })
         body: {
           data: {
             name: data.name,
-            origin: new URL(data.origin).origin,
+            origin,
           },
           organizationId: data.id,
         },
@@ -75,6 +76,7 @@ export const updateApplication = createServerFn({ method: "POST" })
           samlConfig: {
             cert: data.certificate,
             entryPoint: data.entryPoint,
+            idpInitiatedCallbackUrl: origin,
             idpMetadata: { entityID: data.entityId },
             mapping: buildSamlMapping({
               email: data.emailAttribute,

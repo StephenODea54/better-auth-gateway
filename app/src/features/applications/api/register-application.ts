@@ -41,6 +41,7 @@ export const registerApplication = createServerFn({ method: "POST" })
     await requireSuperAdmin("Only a gateway super admin can register an application.");
 
     const slug = slugify(data.name);
+    const origin = new URL(data.origin).origin;
 
     let application;
 
@@ -49,7 +50,7 @@ export const registerApplication = createServerFn({ method: "POST" })
         body: {
           keepCurrentActiveOrganization: true,
           name: data.name,
-          origin: new URL(data.origin).origin,
+          origin,
           slug,
         },
         headers,
@@ -76,6 +77,7 @@ export const registerApplication = createServerFn({ method: "POST" })
             cert: data.certificate,
             entryPoint: data.entryPoint,
             identifierFormat: "urn:oasis:names:tc:SAML:1.1:nameid-format:emailAddress",
+            idpInitiatedCallbackUrl: origin,
             idpMetadata: { entityID: data.entityId },
             mapping: buildSamlMapping({
               email: data.emailAttribute,

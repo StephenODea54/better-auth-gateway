@@ -175,7 +175,7 @@ export const auth = betterAuth({
           wantAssertionsSigned: true,
         },
       }],
-      saml: { allowIdpInitiated: false },
+      saml: { allowIdpInitiated: true },
     }),
     // Must stay last, or session cookies are silently dropped.
     tanstackStartCookies(),
