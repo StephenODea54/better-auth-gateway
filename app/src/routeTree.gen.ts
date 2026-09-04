@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as DashboardRouteRouteImport } from './routes/dashboard/route'
+import { Route as HealthRouteImport } from './routes/health'
 import { Route as ApiSignInRouteImport } from './routes/api/sign-in'
 import { Route as ApiTokenRouteImport } from './routes/api/token'
 import { Route as DashboardIndexRouteImport } from './routes/dashboard/index'
@@ -29,6 +30,11 @@ const IndexRoute = IndexRouteImport.update({
 const DashboardRouteRoute = DashboardRouteRouteImport.update({
   id: '/dashboard',
   path: '/dashboard',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const HealthRoute = HealthRouteImport.update({
+  id: '/health',
+  path: '/health',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiSignInRoute = ApiSignInRouteImport.update({
@@ -80,6 +86,7 @@ const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/dashboard': typeof DashboardRouteRouteWithChildren
+  '/health': typeof HealthRoute
   '/api/sign-in': typeof ApiSignInRoute
   '/api/token': typeof ApiTokenRoute
   '/dashboard/activity': typeof DashboardActivityRoute
@@ -92,6 +99,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/health': typeof HealthRoute
   '/api/sign-in': typeof ApiSignInRoute
   '/api/token': typeof ApiTokenRoute
   '/dashboard/activity': typeof DashboardActivityRoute
@@ -106,6 +114,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/dashboard': typeof DashboardRouteRouteWithChildren
+  '/health': typeof HealthRoute
   '/api/sign-in': typeof ApiSignInRoute
   '/api/token': typeof ApiTokenRoute
   '/dashboard/activity': typeof DashboardActivityRoute
@@ -121,6 +130,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/dashboard'
+    | '/health'
     | '/api/sign-in'
     | '/api/token'
     | '/dashboard/activity'
@@ -133,6 +143,7 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/health'
     | '/api/sign-in'
     | '/api/token'
     | '/dashboard/activity'
@@ -146,6 +157,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/dashboard'
+    | '/health'
     | '/api/sign-in'
     | '/api/token'
     | '/dashboard/activity'
@@ -160,6 +172,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   DashboardRouteRoute: typeof DashboardRouteRouteWithChildren
+  HealthRoute: typeof HealthRoute
   ApiSignInRoute: typeof ApiSignInRoute
   ApiTokenRoute: typeof ApiTokenRoute
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
@@ -179,6 +192,13 @@ declare module '@tanstack/react-router' {
       path: '/dashboard'
       fullPath: '/dashboard'
       preLoaderRoute: typeof DashboardRouteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/health': {
+      id: '/health'
+      path: '/health'
+      fullPath: '/health'
+      preLoaderRoute: typeof HealthRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/sign-in': {
@@ -272,6 +292,7 @@ const DashboardRouteRouteWithChildren = DashboardRouteRoute._addFileChildren(
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   DashboardRouteRoute: DashboardRouteRouteWithChildren,
+  HealthRoute: HealthRoute,
   ApiSignInRoute: ApiSignInRoute,
   ApiTokenRoute: ApiTokenRoute,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
@@ -279,3 +300,13 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}

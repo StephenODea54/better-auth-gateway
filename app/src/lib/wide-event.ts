@@ -157,6 +157,10 @@ function persist(event: EventFields) {
 }
 
 function shouldPersist(event: EventFields) {
+  if (event["http.path"] === "/health") {
+    return false;
+  }
+
   return (event["http.status"] as number) >= 400
     || event["error.type"] !== undefined
     || event["error.cause"] !== undefined
