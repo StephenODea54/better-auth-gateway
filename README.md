@@ -44,9 +44,11 @@ No SDK to install, no shared secret to distribute, no per-app auth infrastructur
 1. A gateway super admin **registers an application**. That records the app's exact
    origin and connects it to a SAML provider at your IdP.
 2. People are **added as members** of that application and given roles.
-3. Someone opens your app. The app calls the gateway's token endpoint with
-   credentials; if there is no gateway session yet it gets a `401` and sends the
-   person to the gateway to sign in.
+3. Someone opens your app, usually from its tile in your IdP. The tile signs them
+   into the gateway and drops them back on your app. If they arrive some other way,
+   the app calls the gateway's token endpoint with credentials, gets a `401`, and
+   sends them to the gateway's sign-in URL, which returns them to the page they were
+   on.
 4. The gateway hands back a **short-lived JWT** whose audience is the app's
    registered origin, carrying the roles and permissions that person holds *in that
    application only*.
@@ -179,19 +181,66 @@ example), override them with `SSO_ATTRIBUTE_EMAIL`, `SSO_ATTRIBUTE_NAME`,
 `SSO_ATTRIBUTE_FIRST_NAME` and `SSO_ATTRIBUTE_LAST_NAME`. Each registered application
 has the same four fields on its own form, under **Attribute mapping**.
 
+## Connecting an app to your IdP
+
+Each application gets its own SAML integration at your IdP, so it can have its own
+tile and its own assignment list. Register the app first; the **Applications** table
+then shows the two values your IdP asks for:
+
+| Your IdP calls it | Value |
+| --- | --- |
+| Single sign-on URL, ACS URL, Recipient, Destination | `https://auth.example.com/api/auth/sso/saml2/sp/acs/<slug>` |
+| Audience URI, SP entity ID, Audience Restriction | `https://auth.example.com/saml/sp/<slug>` |
+
+The audience is *not* the metadata URL, even though other Better Auth deployments use
+that. Copy both from the table rather than typing them. Name ID format is email
+address, and RelayState stays blank.
+
+Clicking the tile posts an assertion straight to that app's ACS. The gateway signs the
+person in and redirects to the app's registered origin. Assigning people to the tile
+in your IdP controls who can start that flow; membership in the gateway controls who
+gets a token.
+
 ## Integrating an app
 
-Ask for a token, and send the person to the gateway if there is not a session yet:
+Point a Better Auth client at the gateway. The gateway answers `/api/auth/*` requests
+from registered origins with CORS headers, so the client works from your app's own
+domain:
+
+```ts
+import { ssoClient } from "@better-auth/sso/client";
+import { createAuthClient } from "better-auth/react";
+
+export const authClient = createAuthClient({
+  baseURL: GATEWAY_URL,
+  plugins: [ssoClient()],
+});
+```
+
+`authClient.useSession()` tells you whether there is a gateway session. When there is
+not, start sign-in for your app and say where to come back to:
+
+```ts
+await authClient.signIn.sso({
+  callbackURL: window.location.href,
+  providerId: "billing",
+  providerType: "saml",
+});
+```
+
+`providerId` is the application's slug. `callbackURL` must sit on the app's registered
+origin. `authClient.signOut()` ends the gateway session for every app.
+
+If you would rather not ship a client, `GET /api/sign-in?application=billing&returnTo=…`
+does the same thing as a plain redirect. Someone who already has a gateway session is
+sent back immediately without visiting the IdP.
+
+Then ask for a token:
 
 ```ts
 const response = await fetch(`${GATEWAY_URL}/api/token?application=billing`, {
   credentials: "include",
 });
-
-if (response.status === 401) {
-  window.location.href = GATEWAY_URL;
-  return;
-}
 
 const { token } = await response.json();
 ```
