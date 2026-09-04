@@ -146,6 +146,15 @@ The first person to sign in becomes the gateway super admin. Super admins are th
 only people who can register applications, and they are enrolled into every
 application automatically.
 
+### Health
+
+`GET /health` returns `200` with `{"status":"ok"}` and never touches the database. That
+is deliberate: it says the process is up and serving, nothing more. A probe that queried
+Postgres would keep a serverless cluster from ever pausing, and would take every
+replica out of rotation the moment the database blinked, which turns a short outage
+into a long one. Point load balancer and orchestrator checks at it; the image's own
+`HEALTHCHECK` already does. Requests to it are logged but never stored as activity.
+
 ## Configuration
 
 | Variable | Required | What it is |
@@ -347,13 +356,6 @@ and it moves up.
 
 ### Next
 
-- **A health endpoint.** There is nothing for a load balancer or a `HEALTHCHECK` to
-  probe, so a container that has lost its database still looks up.
-- **Migrations on start.** The image deliberately does not migrate, so every upgrade
-  needs a checkout and `pnpm db:migrate`. An opt-in flag would drop that step for
-  small deployments without taking the choice away from larger ones.
-- **arm64 images.** [publish-image.yml](.github/workflows/publish-image.yml) builds
-  amd64 only, so Graviton and Apple silicon run under emulation.
 - **Rate limits on `/api/token`.** Nothing throttles the endpoint, and it does a
   database lookup before it checks for a session.
 - **Tests against a real database.** The suite covers pure helpers. The token
