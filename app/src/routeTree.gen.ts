@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as DashboardRouteRouteImport } from './routes/dashboard/route'
+import { Route as ApiSignInRouteImport } from './routes/api/sign-in'
 import { Route as ApiTokenRouteImport } from './routes/api/token'
 import { Route as DashboardIndexRouteImport } from './routes/dashboard/index'
 import { Route as DashboardActivityRouteImport } from './routes/dashboard/activity'
@@ -28,6 +29,11 @@ const IndexRoute = IndexRouteImport.update({
 const DashboardRouteRoute = DashboardRouteRouteImport.update({
   id: '/dashboard',
   path: '/dashboard',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiSignInRoute = ApiSignInRouteImport.update({
+  id: '/api/sign-in',
+  path: '/api/sign-in',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiTokenRoute = ApiTokenRouteImport.update({
@@ -74,6 +80,7 @@ const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/dashboard': typeof DashboardRouteRouteWithChildren
+  '/api/sign-in': typeof ApiSignInRoute
   '/api/token': typeof ApiTokenRoute
   '/dashboard/activity': typeof DashboardActivityRoute
   '/dashboard/applications': typeof DashboardApplicationsRoute
@@ -85,6 +92,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/api/sign-in': typeof ApiSignInRoute
   '/api/token': typeof ApiTokenRoute
   '/dashboard/activity': typeof DashboardActivityRoute
   '/dashboard/applications': typeof DashboardApplicationsRoute
@@ -98,6 +106,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/dashboard': typeof DashboardRouteRouteWithChildren
+  '/api/sign-in': typeof ApiSignInRoute
   '/api/token': typeof ApiTokenRoute
   '/dashboard/activity': typeof DashboardActivityRoute
   '/dashboard/applications': typeof DashboardApplicationsRoute
@@ -112,6 +121,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/dashboard'
+    | '/api/sign-in'
     | '/api/token'
     | '/dashboard/activity'
     | '/dashboard/applications'
@@ -123,6 +133,7 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/api/sign-in'
     | '/api/token'
     | '/dashboard/activity'
     | '/dashboard/applications'
@@ -135,6 +146,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/dashboard'
+    | '/api/sign-in'
     | '/api/token'
     | '/dashboard/activity'
     | '/dashboard/applications'
@@ -148,6 +160,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   DashboardRouteRoute: typeof DashboardRouteRouteWithChildren
+  ApiSignInRoute: typeof ApiSignInRoute
   ApiTokenRoute: typeof ApiTokenRoute
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
 }
@@ -166,6 +179,13 @@ declare module '@tanstack/react-router' {
       path: '/dashboard'
       fullPath: '/dashboard'
       preLoaderRoute: typeof DashboardRouteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/sign-in': {
+      id: '/api/sign-in'
+      path: '/api/sign-in'
+      fullPath: '/api/sign-in'
+      preLoaderRoute: typeof ApiSignInRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/token': {
@@ -252,19 +272,10 @@ const DashboardRouteRouteWithChildren = DashboardRouteRoute._addFileChildren(
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   DashboardRouteRoute: DashboardRouteRouteWithChildren,
+  ApiSignInRoute: ApiSignInRoute,
   ApiTokenRoute: ApiTokenRoute,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}
