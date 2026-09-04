@@ -17,8 +17,10 @@ and a lot of line items on a cloud bill for what is, in practice, one question a
 twelve times. It is especially hard to justify when the apps are internal: it is the
 same fifty people every time, just signed into different tools.
 
-This gateway is the other answer. One service, one database, one connection to your
-identity provider. Apps stay stateless. They redirect to the gateway, exchange the
+This gateway is the other answer. One service, one database, one identity provider.
+Every app still gets its own tile there, with its own icon and its own assignment
+list; the tile just points at the gateway instead of at auth infrastructure of the
+app's own. Apps stay stateless. They redirect to the gateway, exchange the
 gateway session for a signed token scoped to them, and verify it with a public key.
 No SDK to install, no shared secret to distribute, no per-app auth infrastructure.
 
@@ -41,8 +43,9 @@ No SDK to install, no shared secret to distribute, no per-app auth infrastructur
                                      └───────────────────┘
 ```
 
-1. A gateway super admin **registers an application**. That records the app's exact
-   origin and connects it to a SAML provider at your IdP.
+1. You create a **SAML app integration at your IdP** for the app, pointed at the
+   gateway. A gateway super admin then **registers the application**, recording its
+   exact origin and the integration's sign-on URL, issuer and certificate.
 2. People are **added as members** of that application and given roles.
 3. Someone opens your app, usually from its tile in your IdP. The tile signs them
    into the gateway and drops them back on your app. If they arrive some other way,
@@ -183,23 +186,78 @@ has the same four fields on its own form, under **Attribute mapping**.
 
 ## Connecting an app to your IdP
 
-Each application gets its own SAML integration at your IdP, so it can have its own
-tile and its own assignment list. Register the app first; the **Applications** table
-then shows the two values your IdP asks for:
+This is the one way the gateway is meant to be used: **one SAML app integration at
+your IdP per application**, every one of them pointed at the gateway. Each app keeps
+its own tile, icon and assignment list, and the gateway is the only service provider
+behind all of them. There is no single "gateway" tile that people sign into and then
+navigate away from.
+
+The IdP side comes first, because the gateway's registration form needs the sign-on
+URL, issuer and certificate the IdP hands out. The two values the IdP needs from you
+depend only on the application's slug, which is its name lowercased with runs of
+anything other than letters and digits collapsed to a hyphen (`Billing Portal` →
+`billing-portal`):
 
 | Your IdP calls it | Value |
 | --- | --- |
-| Single sign-on URL, ACS URL, Recipient, Destination | `https://auth.example.com/api/auth/sso/saml2/sp/acs/<slug>` |
+| Single sign-on URL, ACS URL, Recipient URL, Destination URL | `https://auth.example.com/api/auth/sso/saml2/sp/acs/<slug>` |
 | Audience URI, SP entity ID, Audience Restriction | `https://auth.example.com/saml/sp/<slug>` |
 
 The audience is *not* the metadata URL, even though other Better Auth deployments use
-that. Copy both from the table rather than typing them. Name ID format is email
-address, and RelayState stays blank.
+that. Once the app is registered, both values appear in the **Applications** table
+with copy buttons; check them against what you typed.
 
 Clicking the tile posts an assertion straight to that app's ACS. The gateway signs the
 person in and redirects to the app's registered origin. Assigning people to the tile
 in your IdP controls who can start that flow; membership in the gateway controls who
-gets a token.
+gets a token. Keep the two lists in step.
+
+### Okta, step by step
+
+Say the app is called `Billing Portal`, so its slug is `billing-portal`, and the
+gateway runs at `https://auth.example.com`.
+
+1. **Applications → Applications → Create App Integration.** Pick *SAML 2.0*.
+2. **General Settings.** App name `Billing Portal`. The logo becomes the tile icon.
+3. **Configure SAML.**
+
+   | Okta field | Value |
+   | --- | --- |
+   | Single sign-on URL | `https://auth.example.com/api/auth/sso/saml2/sp/acs/billing-portal` |
+   | Use this for Recipient URL and Destination URL | leave ticked |
+   | Audience URI (SP Entity ID) | `https://auth.example.com/saml/sp/billing-portal` |
+   | Default RelayState | blank |
+   | Name ID format | `EmailAddress` |
+   | Application username | `Email` |
+
+   Under *Attribute Statements*, add `givenName` → `user.firstName` and `surname` →
+   `user.lastName`. Those are the names the gateway looks for by default, so the
+   attribute mapping fields on the registration form can stay empty.
+
+4. **Feedback.** "This is an internal app that we have created". Finish.
+5. **Sign On tab.** Under *SAML 2.0* / *Metadata details*, copy three things into
+   the gateway's **Register application** form:
+
+   | Okta shows | Gateway field |
+   | --- | --- |
+   | Sign on URL (Identity Provider Single Sign-On URL) | Identity provider single sign-on URL |
+   | Issuer (Identity Provider Issuer) | Identity provider issuer |
+   | Signing Certificate (X.509, download or copy) | X.509 signing certificate |
+
+   Fill in *Name* (`Billing Portal`), *Origin* (`https://billing.example.com`) and
+   *Email domain* (the domain your people sign in with). Register.
+6. **Assignments tab.** Assign the people or groups who should see the tile. Add the
+   same people as members of the application in the gateway and give them roles.
+
+Once saved, Okta's summary shows the same fields under different names: *Single
+Sign On URL*, *Recipient URL* and *Destination URL* should all read the ACS URL above,
+and *Audience Restriction* should read the audience URI. If Audience Restriction ends
+in `/metadata`, sign-in will succeed at Okta and then fail at the gateway.
+
+The gateway's own dashboard is set up the same way once, as one more Okta app that
+only admins are assigned to. Its slug is `SSO_PROVIDER_ID` (`gateway` by default),
+and its sign-on URL, issuer and certificate go in `SSO_IDP_ENTRY_POINT`,
+`SSO_IDP_ENTITY_ID` and `SSO_IDP_CERT` instead of the form.
 
 ## Integrating an app
 
