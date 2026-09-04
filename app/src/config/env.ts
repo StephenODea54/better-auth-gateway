@@ -18,6 +18,7 @@ export const env = createEnv({
     POSTGRES_HOST: z.string().min(1),
     POSTGRES_PASSWORD: z.string().min(1),
     POSTGRES_PORT: z.coerce.number().int().positive(),
+    POSTGRES_SSLMODE: z.enum(["disable", "require", "verify-full"]).optional(),
     POSTGRES_USER: z.string().min(1),
     SSO_ATTRIBUTE_EMAIL: z.string().min(1).optional(),
     SSO_ATTRIBUTE_FIRST_NAME: z.string().min(1).optional(),

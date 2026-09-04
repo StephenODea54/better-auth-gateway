@@ -166,6 +166,7 @@ into a long one. Point load balancer and orchestrator checks at it; the image's 
 | `POSTGRES_DB` | yes | |
 | `POSTGRES_USER` | yes | |
 | `POSTGRES_PASSWORD` | yes | |
+| `POSTGRES_SSLMODE` | no | `disable`, `require` or `verify-full`. Unset behaves as `disable`, which is what a local Postgres container wants. Managed Postgres generally refuses unencrypted connections — Aurora PostgreSQL 17 sets `rds.force_ssl=1` — so set `require` there. `verify-full` checks the certificate against the system trust store, which works where your provider uses a publicly trusted CA and not for Amazon RDS, whose roots are not in it. |
 | `SSO_IDP_ENTRY_POINT` | yes | Your IdP's SAML sign-on URL, for signing into the gateway. |
 | `SSO_IDP_ENTITY_ID` | yes | Your IdP's entity ID. |
 | `SSO_IDP_CERT` | yes | Your IdP's signing certificate, base64 encoded. |

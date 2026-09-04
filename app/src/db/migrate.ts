@@ -4,7 +4,7 @@ import process from "node:process";
 import { fileURLToPath } from "node:url";
 import pg from "pg";
 
-import { postgresUrlFromEnv } from "../config/postgres-url.ts";
+import { postgresConfigFromEnv } from "../config/postgres-url.ts";
 
 const MIGRATION_LOCK_KEY = 7_364_512_803;
 
@@ -32,7 +32,7 @@ async function main() {
 }
 
 async function runMigrations() {
-  const client = new pg.Client({ connectionString: postgresUrlFromEnv() });
+  const client = new pg.Client(postgresConfigFromEnv());
   await client.connect();
 
   try {
