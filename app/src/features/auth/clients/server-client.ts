@@ -165,7 +165,7 @@ export const auth = betterAuth({
           entryPoint: env.SSO_IDP_ENTRY_POINT,
           identifierFormat: "urn:oasis:names:tc:SAML:1.1:nameid-format:emailAddress",
           idpMetadata: { entityID: env.SSO_IDP_ENTITY_ID },
-          issuer: `${env.BETTER_AUTH_URL}/saml/sp/${env.SSO_PROVIDER_ID}`,
+          issuer: `${env.BETTER_AUTH_URL}/api/auth/sso/saml2/sp/metadata`,
           mapping: buildSamlMapping({
             email: env.SSO_ATTRIBUTE_EMAIL,
             firstName: env.SSO_ATTRIBUTE_FIRST_NAME,

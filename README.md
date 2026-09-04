@@ -261,13 +261,32 @@ gateway runs at `https://auth.example.com`.
 
 Once saved, Okta's summary shows the same fields under different names: *Single
 Sign On URL*, *Recipient URL* and *Destination URL* should all read the ACS URL above,
-and *Audience Restriction* should read the audience URI. If Audience Restriction ends
-in `/metadata`, sign-in will succeed at Okta and then fail at the gateway.
+and *Audience Restriction* should read the audience URI. For an application that is
+`/saml/sp/<slug>`; if it ends in `/metadata` instead, sign-in succeeds at Okta and then
+fails at the gateway with an audience mismatch.
 
-The gateway's own dashboard is set up the same way once, as one more Okta app that
-only admins are assigned to. Its slug is `SSO_PROVIDER_ID` (`gateway` by default),
-and its sign-on URL, issuer and certificate go in `SSO_IDP_ENTRY_POINT`,
-`SSO_IDP_ENTITY_ID` and `SSO_IDP_CERT` instead of the form.
+The gateway's own dashboard is one more Okta app, with only admins assigned to it. Its
+slug is `SSO_PROVIDER_ID` (`gateway` by default), and its sign-on URL, issuer and
+certificate go in `SSO_IDP_ENTRY_POINT`, `SSO_IDP_ENTITY_ID` and `SSO_IDP_CERT` rather
+than the form.
+
+Its **audience is different from an application's**, and this is the one place the two
+diverge:
+
+| | Audience URI |
+| --- | --- |
+| The gateway's own app | `https://auth.example.com/api/auth/sso/saml2/sp/metadata` |
+| A registered application | `https://auth.example.com/saml/sp/<slug>` |
+
+The gateway's own app is exactly what
+[the Better Auth Okta guide](https://better-auth.com/docs/guides/saml-sso-with-okta)
+describes, so its values are the guide's values, unchanged. Registered applications get an
+audience of their own instead, because the metadata URL carries its provider in a query
+parameter rather than the path and so is identical for every provider. Distinct audiences
+mean an assertion minted for one application is rejected at another's callback, which
+matters here in a way it does not for a single-app deployment — assuming your IdP signs
+each app with its own key, that check is the second line of defence rather than the
+first.
 
 ## Integrating an app
 
