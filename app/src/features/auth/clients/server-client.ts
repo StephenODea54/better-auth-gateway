@@ -19,6 +19,7 @@ import {
   SUPER_ADMIN_ROLE,
   syncSuperAdminMemberships,
 } from "@/features/auth/lib/super-admin.ts";
+import { trustedOrigins } from "@/features/auth/lib/trusted-origins.ts";
 import { setEvent } from "@/lib/wide-event.ts";
 
 interface SessionResult {
@@ -180,5 +181,5 @@ export const auth = betterAuth({
     tanstackStartCookies(),
   ],
   secret: env.BETTER_AUTH_SECRET,
-  trustedOrigins: [env.BETTER_AUTH_URL],
+  trustedOrigins,
 });
