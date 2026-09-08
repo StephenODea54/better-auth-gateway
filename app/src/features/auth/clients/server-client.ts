@@ -44,6 +44,14 @@ function readSuccess(value: unknown) {
 }
 
 export const auth = betterAuth({
+  // Every identity here arrives through SAML, so users never verify an email
+  // address with Better Auth itself. Requiring that would block linking the
+  // same person across the per-application providers.
+  account: {
+    accountLinking: {
+      requireLocalEmailVerified: false,
+    },
+  },
   baseURL: env.BETTER_AUTH_URL,
   database: drizzleAdapter(db, {
     provider: "pg",
