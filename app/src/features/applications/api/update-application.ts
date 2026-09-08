@@ -93,6 +93,13 @@ export const updateApplication = createServerFn({ method: "POST" })
       throw toFriendlyError(error, "Could not update this application's identity provider.");
     }
 
+    // updateSSOProvider resets the verification when the domain changes, and
+    // a super admin's update is the domain check for this deployment.
+    await db
+      .update(ssoProvider)
+      .set({ domainVerified: true })
+      .where(eq(ssoProvider.providerId, provider.providerId));
+
     return { id: data.id, name: data.name };
   });
 

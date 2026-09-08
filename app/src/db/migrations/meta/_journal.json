@@ -50,6 +50,13 @@
       "when": 1788289079540,
       "tag": "0006_abnormal_prism",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1788629466024,
+      "tag": "0007_material_ravenous",
+      "breakpoints": true
     }
   ]
 }

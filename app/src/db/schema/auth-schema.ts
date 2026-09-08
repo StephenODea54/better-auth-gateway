@@ -185,6 +185,7 @@ export const ssoProvider = pgTable("sso_provider", {
   providerId: text("provider_id").notNull().unique(),
   organizationId: text("organization_id"),
   domain: text("domain").notNull(),
+  domainVerified: boolean("domain_verified").default(false).notNull(),
 });
 
 export const userRelations = relations(user, ({ many }) => ({

@@ -175,6 +175,10 @@ export const auth = betterAuth({
           wantAssertionsSigned: true,
         },
       }],
+      // A super admin registering an application is the domain check for this
+      // deployment, so registration marks providers verified itself instead
+      // of the DNS token flow.
+      domainVerification: { enabled: true },
       saml: { allowIdpInitiated: true },
     }),
     // Must stay last, or session cookies are silently dropped.

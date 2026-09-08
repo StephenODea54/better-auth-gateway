@@ -1,11 +1,14 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { createServerFn } from "@tanstack/react-start";
 import { getRequest } from "@tanstack/react-start/server";
+import { eq } from "drizzle-orm";
 import { z } from "zod";
 
 import type { MutationConfig } from "@/lib/react-query.ts";
 
 import { env } from "@/config/env.ts";
+import { db } from "@/db/clients/db-client.ts";
+import { ssoProvider } from "@/db/schema/index.ts";
 import { slugify } from "@/features/applications/lib/slugify.ts";
 import { auth } from "@/features/auth/clients/server-client.ts";
 import { requireSuperAdmin } from "@/features/auth/lib/guards.ts";
@@ -90,6 +93,13 @@ export const registerApplication = createServerFn({ method: "POST" })
         },
         headers,
       });
+
+      // Registration by a super admin is the domain check here, so the DNS
+      // token flow that registerSSOProvider starts is skipped.
+      await db
+        .update(ssoProvider)
+        .set({ domainVerified: true })
+        .where(eq(ssoProvider.providerId, slug));
     }
     catch (error) {
       await auth.api.deleteOrganization({
