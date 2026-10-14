@@ -7,6 +7,10 @@ import { auth } from "@/features/auth/clients/server-client.ts";
 import { resolveReturnTo } from "@/features/auth/lib/return-to.ts";
 import { setEvent } from "@/lib/wide-event.ts";
 
+function redirect(location: string) {
+  return new Response(null, { headers: { location }, status: 302 });
+}
+
 export const Route = createFileRoute("/api/sign-in")({
   server: {
     handlers: {
@@ -35,7 +39,7 @@ export const Route = createFileRoute("/api/sign-in")({
         const session = await auth.api.getSession({ headers: request.headers });
 
         if (session) {
-          return Response.redirect(callbackURL, 302);
+          return redirect(callbackURL);
         }
 
         const { url: idpUrl } = await auth.api.signInSSO({
@@ -43,7 +47,7 @@ export const Route = createFileRoute("/api/sign-in")({
           headers: request.headers,
         });
 
-        return Response.redirect(idpUrl, 302);
+        return redirect(idpUrl);
       },
     },
   },
